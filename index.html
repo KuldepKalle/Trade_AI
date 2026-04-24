@@ -232,7 +232,7 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
       </div>
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:5px">
-          <span class="stitle" style="margin:0;border:none;padding:0">CANDLE VOLUME · 15M</span>
+          <span class="stitle" style="margin:0;border:none;padding:0">CANDLE VOLUME · 30M</span>
           <span id="vol-info" style="font-family:var(--mono);font-size:8px;color:var(--t3)">Loading...</span>
         </div>
         <div class="volwrap" id="vol-candles"></div>
@@ -312,7 +312,7 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
 <script>
 // STATE
 var XAU={price:0,high:0,low:0,dailyOpen:0},goldClosed=false;
-var c15M=[],c1H=[],c4H=[],cD=[];
+var c15M=[],c30M=[],c1H=[],c4H=[],cD=[];
 var sigs=[],newsEvs=[],newsFilter='ALL',newsLoaded='';
 var lastCheck=0,lastBuy=0,lastSell=0,activeTF='1H',soundOn=true,jf='all';
 
@@ -408,11 +408,11 @@ function renderXAU(){
 // CANDLES
 function fetchCandles(){
   var base='https://api.binance.com/api/v3/klines?symbol=XAUUSDT&interval=';
-  [{tf:'15m',lim:80,k:'15M'},{tf:'1h',lim:60,k:'1H'},{tf:'4h',lim:50,k:'4H'},{tf:'1d',lim:30,k:'D'}].forEach(function(t){
+  [{tf:'15m',lim:80,k:'15M'},{tf:'30m',lim:80,k:'30M'},{tf:'1h',lim:100,k:'1H'},{tf:'4h',lim:60,k:'4H'},{tf:'1d',lim:50,k:'D'}].forEach(function(t){
     fetch(base+t.tf+'&limit='+t.lim).then(function(r){return r.json();}).then(function(d){
       if(!Array.isArray(d)||!d.length)return;
       var p=d.map(function(k){return{t:+k[0],open:parseFloat(k[1]),high:parseFloat(k[2]),low:parseFloat(k[3]),close:parseFloat(k[4]),vol:parseFloat(k[5])};});
-      if(t.k==='15M'){c15M=p;renderVol(p);}else if(t.k==='1H')c1H=p;else if(t.k==='4H')c4H=p;else cD=p;
+      if(t.k==='15M')c15M=p;else if(t.k==='30M'){c30M=p;renderVol(p);}else if(t.k==='1H')c1H=p;else if(t.k==='4H')c4H=p;else cD=p;
     }).catch(function(){});
   });
 }
@@ -425,7 +425,7 @@ function renderVol(candles){
     var bull=c.close>=c.open,cur=i===candles.length-1;
     var h=Math.max(3,Math.round(c.vol/maxV*74));
     var cls='cbar '+(cur&&!goldClosed?'cur':bull?'bull':'bear');
-    var tf=Math.floor(c.t/900000)*900000,ist=new Date(tf+19800000);
+    var tf=Math.floor(c.t/1800000)*1800000,ist=new Date(tf+19800000);
     var ts=String(ist.getUTCHours()).padStart(2,'0')+':'+String(ist.getUTCMinutes()).padStart(2,'0');
     html+='<div class="ccol" title="'+ts+' O:'+fmt(c.open)+' C:'+fmt(c.close)+'"><div class="'+cls+'" style="height:'+h+'px'+(c.vol>avgV*1.5?';box-shadow:0 0 0 1px rgba(240,192,64,.5)':'')+'"></div><div class="ctime">'+ts+'</div></div>';
   });
@@ -435,24 +435,47 @@ function renderVol(candles){
   var re=gel('v-rel');if(re){re.textContent=(rel>=0?'+':'')+rel+'%';re.style.color=rel>50?'var(--gold)':rel>20?'var(--green)':rel<-30?'var(--red)':'var(--t1)';}
   var sig=rel>100?'VERY HIGH':rel>50?'HIGH':rel>20?'ABOVE AVG':rel<-30?'LOW':'NORMAL';
   var se=gel('v-sig');if(se){se.textContent=sig;se.style.color=rel>50?'var(--gold)':rel>20?'var(--green)':rel<-30?'var(--red)':'var(--amber)';}
-  set('vol-info','Binance XAUUSDT · 15M · '+candles.length+' bars');
+  set('vol-info','Binance XAUUSDT · 30M · '+candles.length+' bars');
 }
 
 // SWING + FIBS
 function calcEMA(arr,n){if(!arr||arr.length<n)return null;var k=2/(n+1),e=arr.slice(0,n).reduce(function(a,b){return a+b;})/n;for(var i=n;i<arr.length;i++)e=arr[i]*k+e*(1-k);return e;}
 function detectSwing(candles,lb){
-  if(!candles||candles.length<(lb||4)*2+2)return null;
-  var n=candles.length,sh=0,sl=Infinity;
-  for(var i=(lb||4);i<n-(lb||4);i++){
-    var hi=true,lo=true;
-    for(var j=1;j<=(lb||4);j++){if(candles[i].high<=candles[i-j].high||candles[i].high<=candles[i+j].high)hi=false;if(candles[i].low>=candles[i-j].low||candles[i].low>=candles[i+j].low)lo=false;}
-    if(hi)sh=Math.max(sh,candles[i].high);if(lo)sl=Math.min(sl,candles[i].low);
+  lb=lb||3;
+  if(!candles||candles.length<lb*2+3)return null;
+  var n=candles.length;
+  // Scan BACKWARDS to find the most recent swing high and most recent swing low
+  // Only look at closed candles (exclude last bar which may be forming)
+  var sh=null,sl=null,shIdx=-1,slIdx=-1;
+  for(var i=n-lb-1;i>=lb;i--){
+    // Check pivot high: must be highest of lb bars on EACH side
+    if(sh===null){
+      var isH=true;
+      for(var j=1;j<=lb;j++){
+        if(candles[i].high<=candles[i-j].high||candles[i].high<=candles[i+j].high){isH=false;break;}
+      }
+      if(isH){sh=candles[i].high;shIdx=i;}
+    }
+    // Check pivot low: must be lowest of lb bars on EACH side
+    if(sl===null){
+      var isL=true;
+      for(var j=1;j<=lb;j++){
+        if(candles[i].low>=candles[i-j].low||candles[i].low>=candles[i+j].low){isL=false;break;}
+      }
+      if(isL){sl=candles[i].low;slIdx=i;}
+    }
+    if(sh!==null&&sl!==null)break;
   }
-  if(!sh)sh=Math.max.apply(null,candles.slice(-(lb||4)*3).map(function(c){return c.high;}));
-  if(sl===Infinity)sl=Math.min.apply(null,candles.slice(-(lb||4)*3).map(function(c){return c.low;}));
-  var closes=candles.map(function(c){return c.close;}),ema=calcEMA(closes,Math.min(21,closes.length));
+  // Fallback if no clear pivot found - use last N candle range
+  var fallbackN=Math.min(30,n);
+  if(!sh)sh=Math.max.apply(null,candles.slice(-fallbackN).map(function(k){return k.high;}));
+  if(!sl)sl=Math.min.apply(null,candles.slice(-fallbackN).map(function(k){return k.low;}));
+  // Direction: EMA-21 on closes
+  var closes=candles.map(function(k){return k.close;});
+  var ema21=calcEMA(closes,Math.min(21,closes.length));
   var p=closes[closes.length-1];
-  return{high:parseFloat(fmt(sh)),low:parseFloat(fmt(sl)),dir:ema?(p>ema?'bull':'bear'):'neutral'};
+  var dir=ema21?(p>ema21?'bull':'bear'):'neutral';
+  return{high:parseFloat(fmt(sh)),low:parseFloat(fmt(sl)),dir:dir,shIdx:shIdx,slIdx:slIdx};
 }
 function calcFibs(sh,sl){
   var r=sh-sl;if(r<.5)return[];
@@ -484,8 +507,14 @@ function cycleTF(){var tfs=['1H','4H','D'];activeTF=tfs[(tfs.indexOf(activeTF)+1
 function updateFib(){
   var p=XAU.price;if(!p)return;
   var swD=detectSwing(cD,3),sw4=detectSwing(c4H,4),sw1=detectSwing(c1H,4);
-  function updCard(pre,sw){if(!sw)return;set(pre+'-sh',fmt(sw.high));set(pre+'-sl',fmt(sw.low));var el=gel(pre+'-tr');if(el){el.className='tag '+(sw.dir==='bull'?'tb':'ts');el.textContent=sw.dir==='bull'?'▲ BULL':'▼ BEAR';}}
-  updCard('d',swD);updCard('h4',sw4);updCard('h1',sw1);
+  function updCard(pre,sw,total){
+    if(!sw)return;
+    set(pre+'-sh',fmt(sw.high)+(sw.shIdx>=0?' ('+( total-1-sw.shIdx)+'b ago)':''));
+    set(pre+'-sl',fmt(sw.low)+(sw.slIdx>=0?' ('+(total-1-sw.slIdx)+'b ago)':''));
+    var el=gel(pre+'-tr');
+    if(el){el.className='tag '+(sw.dir==='bull'?'tb':'ts');el.textContent=sw.dir==='bull'?'▲ BULL':'▼ BEAR';}
+  }
+  updCard('d',swD,cD.length);updCard('h4',sw4,c4H.length);updCard('h1',sw1,c1H.length);
   var dirs=[swD,sw4,sw1].filter(Boolean).map(function(s){return s.dir;});
   var bulls=dirs.filter(function(d){return d==='bull';}).length,bears=dirs.filter(function(d){return d==='bear';}).length;
   var at=gel('align-tag');if(at){if(bulls===3){at.className='tag tb';at.textContent='3/3 TFs BULL ▲';}else if(bears===3){at.className='tag ts';at.textContent='3/3 TFs BEAR ▼';}else if(bulls===2){at.className='tag tb';at.textContent='2/3 TF BULL';}else if(bears===2){at.className='tag ts';at.textContent='2/3 TF BEAR';}else{at.className='tag tw';at.textContent='MIXED TF';}}
@@ -549,6 +578,14 @@ function checkSig(){
   if(dir==='neutral')return;if(dir==='bull'&&!conf.bull)return;if(dir==='bear'&&conf.bull)return;
   var score=0;
   if(bulls>=3||bears>=3)score+=3;else if(bulls>=2||bears>=2)score+=2;else score+=1;
+  // 30M candle direction bonus — confirms entry timing
+  if(c30M&&c30M.length>=3){
+    var last30=c30M[c30M.length-1],prev30=c30M[c30M.length-2];
+    var bull30=last30.close>last30.open,range30=last30.high-last30.low||.01;
+    var body30=Math.abs(last30.close-last30.open)/range30;
+    var trending30=(dir==='bull'&&bull30&&body30>.4)||(dir==='bear'&&!bull30&&body30>.4);
+    if(trending30)score+=1; // 30M candle aligns with direction
+  }
   if(hitFib.ote)score+=3;else if(hitFib.pct===.618)score+=2;else score+=1;
   if(conf.pattern==='Engulfing'||conf.pattern==='Pin Bar')score+=2;else score+=1;
   var ist=getIST(),m=ist.getUTCHours()*60+ist.getUTCMinutes(),kz=getKZ(m);
