@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>VWAP+EMA9 — Gold & BTC</title>
+<title>XAU ---- | BTC ---- | VWAP+EMA9</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#07090f;--bg2:#0c101a;--bg3:#121824;--b1:#1b2438;--b2:#263350;--t1:#dde8f8;--t2:#8fa8cc;--t3:#445e88;--gold:#f0c040;--goldf:#fff5c0;--green:#22c55e;--red:#ef4444;--blue:#60a5fa;--amber:#f59e0b;--teal:#2dd4bf;--purple:#a78bfa;--cyan:#22d3ee;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}
@@ -833,6 +833,19 @@ function renderPrice(sym){
     var mc2=gel('btc-mc-c');if(mc2){mc2.textContent=bc?bc.textContent:cs;mc2.className='val '+(chg>=0?'up':'dn');}
     var el2=gel('bp');if(el2){el2.classList.add('flashb');setTimeout(function(){el2.classList.remove('flashb');},400);}
   }
+  // Update browser tab title with live prices
+  updateTabTitle();
+}
+
+function updateTabTitle(){
+  var xp=XAU.price,bp=BTC.price;
+  var xStr=xp?'XAU '+xp.toFixed(2):'XAU ---';
+  var bStr=bp?'BTC '+(bp>=1000?Math.round(bp).toLocaleString():bp.toFixed(2)):'BTC ---';
+  var xChg=XAU.dailyOpen&&xp?((xp-XAU.dailyOpen)/XAU.dailyOpen*100):'';
+  var bChg=BTC.dailyOpen&&bp?((bp-BTC.dailyOpen)/BTC.dailyOpen*100):'';
+  var xSign=typeof xChg==='number'?(xChg>=0?'▲':'▼'):'';
+  var bSign=typeof bChg==='number'?(bChg>=0?'▲':'▼'):'';
+  document.title=xStr+(xSign?' '+xSign+Math.abs(typeof xChg==='number'?xChg:0).toFixed(2)+'%':'')+' | '+bStr+(bSign?' '+bSign+Math.abs(typeof bChg==='number'?bChg:0).toFixed(2)+'%':'');
 }
 
 // ═══ CANDLE FETCH ════════════════════════════════
