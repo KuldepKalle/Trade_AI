@@ -193,8 +193,10 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
 <div class="tabs">
   <button class="tab on"  onclick="sw('xau',this)"  id="tab-xau">◈ XAU/USD</button>
   <button class="tab"     onclick="sw('btc',this)"  id="tab-btc">₿ BITCOIN</button>
+  <button class="tab"     onclick="sw('sigs',this)" id="tab-sigs">⚡ SIGNALS</button>
   <button class="tab"     onclick="sw('news',this)" id="tab-news">📰 NEWS</button>
   <button class="tab"     onclick="sw('jnl',this)"  id="tab-jnl">📓 JOURNAL</button>
+  <button class="tab"     onclick="sw('notif',this)" id="tab-notif">🔔 ALERTS</button>
 </div>
 
 <!-- ═══════════════════════════════════════════════════
@@ -437,7 +439,143 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
   </div>
 </div></div>
 
-<!-- ═══ NEWS TAB ═══ -->
+<!-- ═══ SIGNALS TAB ═══ -->
+<div id="tc-sigs" class="tc"><div class="main">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;flex-wrap:wrap;gap:8px">
+    <span class="stitle" style="margin:0;border:none;padding:0">⚡ ALL SIGNALS — Tap TP1 / TP2 / SL to update</span>
+    <div style="display:flex;gap:5px;flex-wrap:wrap">
+      <button class="btn" onclick="sfilt='all';renderAllSigs()" style="color:var(--gold);border-color:rgba(240,192,64,.4)" id="sf-all">ALL</button>
+      <button class="btn" onclick="sfilt='xau';renderAllSigs()" id="sf-xau">XAU</button>
+      <button class="btn" onclick="sfilt='btc';renderAllSigs()" id="sf-btc" style="color:var(--blue)">BTC</button>
+      <button class="btn green" onclick="sfilt='open';renderAllSigs()" id="sf-open">OPEN</button>
+      <button class="btn" onclick="sfilt='tp';renderAllSigs()" id="sf-tp">TP HIT</button>
+      <button class="btn red" onclick="sfilt='sl';renderAllSigs()" id="sf-sl">SL HIT</button>
+    </div>
+  </div>
+  <div class="g4" style="margin-bottom:11px">
+    <div class="mc"><div class="lbl">Open Trades</div><div class="val" id="sig-open-ct" style="color:var(--blue)">0</div></div>
+    <div class="mc"><div class="lbl">TP Hits</div><div class="val up" id="sig-tp-ct">0</div></div>
+    <div class="mc"><div class="lbl">SL Hits</div><div class="val dn" id="sig-sl-ct">0</div></div>
+    <div class="mc"><div class="lbl">Total P&L</div><div class="val" id="sig-pnl-ct">---</div></div>
+  </div>
+  <div id="sig-all-list"><div style="text-align:center;color:var(--t3);font-family:var(--mono);font-size:10px;padding:30px">No signals yet.</div></div>
+</div></div>
+
+<!-- ═══ ALERTS / NOTIFICATIONS TAB ═══ -->
+<div id="tc-notif" class="tc"><div class="main">
+  <div class="stitle">🔔 ALERT NOTIFICATIONS</div>
+  
+  <!-- Sound alerts -->
+  <div class="card gb" style="margin-bottom:12px">
+    <div class="stitle">SOUND ALERTS (Browser)</div>
+    <div class="rw"><span class="rl">Sound Alerts</span><button class="btn" id="notif-sound-btn" onclick="toggleSound()" style="font-size:8px;padding:3px 9px">🔔 ON</button></div>
+    <div class="rw"><span class="rl">Volume Level</span><div style="display:flex;align-items:center;gap:8px"><input type="range" id="vol-slider" min="0.1" max="1" step="0.05" value="0.65" style="width:120px;accent-color:var(--gold)" oninput="alertVolume=+this.value;document.getElementById('vol-pct').textContent=Math.round(this.value*100)+'%'"><span id="vol-pct" style="font-family:var(--mono);font-size:9px;color:var(--gold)">65%</span></div></div>
+    <div class="rw"><span class="rl">Test Sounds</span>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn" onclick="snd('signal_ap')" style="font-size:7px">★ A+</button>
+        <button class="btn green" onclick="snd('signal_buy')" style="font-size:7px">▲ BUY</button>
+        <button class="btn red" onclick="snd('signal_sell')" style="font-size:7px">▼ SELL</button>
+        <button class="btn green" onclick="snd('tp_hit')" style="font-size:7px">✅ TP</button>
+        <button class="btn red" onclick="snd('sl_hit')" style="font-size:7px">❌ SL</button>
+      </div>
+    </div>
+    <div class="rw"><span class="rl">Browser Push</span><button class="btn" onclick="reqNotif()" style="font-size:8px;padding:3px 9px">Enable Notifications</button></div>
+  </div>
+
+  <!-- Telegram -->
+  <div class="card" style="margin-bottom:12px;border-color:rgba(96,165,250,.25)">
+    <div class="stitle blue">TELEGRAM ALERTS</div>
+    <div style="font-family:var(--mono);font-size:8px;color:var(--t3);margin-bottom:10px;line-height:1.7">
+      To receive Telegram alerts:<br>
+      1. Open <strong style="color:var(--t1)">@BotFather</strong> on Telegram → /newbot → copy the <strong style="color:var(--gold)">Bot Token</strong><br>
+      2. Send any message to your new bot<br>
+      3. Open <strong style="color:var(--blue)">https://api.telegram.org/bot{TOKEN}/getUpdates</strong> to find your <strong style="color:var(--gold)">Chat ID</strong><br>
+      4. Paste both below and click Save
+    </div>
+    <div class="rw"><span class="rl">Bot Token</span><input id="tg-token" type="text" placeholder="123456:ABC-DEF..." style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:280px" value=""></div>
+    <div class="rw"><span class="rl">Chat ID</span><input id="tg-chatid" type="text" placeholder="-100xxxxxxxxx or @username" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:280px" value=""></div>
+    <div class="rw"><span class="rl">Status</span><span id="tg-status" class="tag tw">Not configured</span></div>
+    <div style="display:flex;gap:7px;margin-top:9px">
+      <button class="btn" onclick="saveTelegram()" style="font-size:8px;padding:4px 12px;border-color:rgba(96,165,250,.4);color:var(--blue)">💾 Save</button>
+      <button class="btn" onclick="testTelegram()" style="font-size:8px;padding:4px 12px">📨 Send Test</button>
+    </div>
+  </div>
+
+  <!-- Email -->
+  <div class="card" style="margin-bottom:12px;border-color:rgba(34,197,94,.2)">
+    <div class="stitle" style="color:var(--green)">EMAIL ALERTS</div>
+    <div style="font-family:var(--mono);font-size:8px;color:var(--t3);margin-bottom:10px;line-height:1.7">
+      Email alerts use <strong style="color:var(--t1)">EmailJS</strong> (free, no backend needed).<br>
+      1. Sign up free at <strong style="color:var(--blue)">emailjs.com</strong><br>
+      2. Create a service (Gmail) + email template<br>
+      3. Paste your <strong style="color:var(--gold)">Service ID, Template ID, Public Key</strong> below
+    </div>
+    <div class="rw"><span class="rl">EmailJS Service ID</span><input id="ejs-sid" type="text" placeholder="service_xxxxxxx" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:220px"></div>
+    <div class="rw"><span class="rl">Template ID</span><input id="ejs-tid" type="text" placeholder="template_xxxxxxx" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:220px"></div>
+    <div class="rw"><span class="rl">Public Key</span><input id="ejs-key" type="text" placeholder="xxxxxxxxxxxxxxxxxxxx" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:220px"></div>
+    <div class="rw"><span class="rl">To Email</span><input id="ejs-to" type="text" placeholder="kuldepkalle@gmail.com" value="kuldepkalle@gmail.com" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:220px"></div>
+    <div class="rw"><span class="rl">Status</span><span id="ejs-status" class="tag tw">Not configured</span></div>
+    <div style="display:flex;gap:7px;margin-top:9px">
+      <button class="btn" onclick="saveEmail()" style="font-size:8px;padding:4px 12px;border-color:rgba(34,197,94,.4);color:var(--green)">💾 Save</button>
+      <button class="btn" onclick="testEmail()" style="font-size:8px;padding:4px 12px">📧 Send Test</button>
+    </div>
+  </div>
+
+</div></div>
+
+<!-- SIGNALS TAB -->
+<div id="tc-sigs" class="tc"><div class="main">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;flex-wrap:wrap;gap:8px">
+    <span class="stitle" style="margin:0;border:none;padding:0">ALL SIGNALS — tap TP1/TP2/SL to update outcome</span>
+    <div style="display:flex;gap:5px;flex-wrap:wrap">
+      <button class="btn" onclick="sfilt='all';renderAllSigs()" style="color:var(--gold);border-color:rgba(240,192,64,.4)">ALL</button>
+      <button class="btn" onclick="sfilt='xau';renderAllSigs()">XAU</button>
+      <button class="btn" onclick="sfilt='btc';renderAllSigs()" style="color:var(--blue)">BTC</button>
+      <button class="btn green" onclick="sfilt='open';renderAllSigs()">OPEN</button>
+      <button class="btn" onclick="sfilt='tp';renderAllSigs()">TP HIT</button>
+      <button class="btn red" onclick="sfilt='sl';renderAllSigs()">SL HIT</button>
+    </div>
+  </div>
+  <div class="g4" style="margin-bottom:11px">
+    <div class="mc"><div class="lbl">Open Trades</div><div class="val blue" id="sig-open-ct">0</div></div>
+    <div class="mc"><div class="lbl">TP Hits</div><div class="val up" id="sig-tp-ct">0</div></div>
+    <div class="mc"><div class="lbl">SL Hits</div><div class="val dn" id="sig-sl-ct">0</div></div>
+    <div class="mc"><div class="lbl">Net P&L</div><div class="val" id="sig-pnl-ct">---</div></div>
+  </div>
+  <div id="sig-all-list"><div style="text-align:center;color:var(--t3);font-family:var(--mono);padding:30px">No signals yet.</div></div>
+</div></div>
+
+<!-- ALERTS / NOTIFICATIONS TAB -->
+<div id="tc-notif" class="tc"><div class="main">
+  <div class="card gb" style="margin-bottom:12px">
+    <div class="stitle">SOUND ALERTS</div>
+    <div class="rw"><span class="rl">Sound</span><button class="btn" id="notif-sound-btn" onclick="toggleSound()" style="font-size:8px;padding:3px 9px">ON</button></div>
+    <div class="rw"><span class="rl">Volume</span><div style="display:flex;align-items:center;gap:8px"><input type="range" id="vol-slider" min="0.1" max="1" step="0.05" value="0.65" style="width:120px;accent-color:var(--gold)" oninput="alertVolume=+this.value;document.getElementById('vol-pct').textContent=Math.round(this.value*100)+'%'"><span id="vol-pct" style="font-family:var(--mono);font-size:9px;color:var(--gold)">65%</span></div></div>
+    <div class="rw"><span class="rl">Test</span><div style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn" onclick="snd('signal_ap')" style="font-size:7px">A+</button><button class="btn green" onclick="snd('signal_buy')" style="font-size:7px">BUY</button><button class="btn red" onclick="snd('signal_sell')" style="font-size:7px">SELL</button><button class="btn green" onclick="snd('tp_hit')" style="font-size:7px">TP</button><button class="btn red" onclick="snd('sl_hit')" style="font-size:7px">SL</button></div></div>
+    <div class="rw"><span class="rl">Browser Push</span><button class="btn" onclick="reqNotif()" style="font-size:8px;padding:3px 9px">Enable</button></div>
+  </div>
+  <div class="card" style="margin-bottom:12px;border-color:rgba(96,165,250,.25)">
+    <div class="stitle blue">TELEGRAM ALERTS</div>
+    <div style="font-family:var(--mono);font-size:8px;color:var(--t3);margin-bottom:10px;line-height:1.8">1. Open @BotFather on Telegram &rarr; /newbot &rarr; copy Bot Token<br>2. Message your new bot once<br>3. Open https://api.telegram.org/bot{TOKEN}/getUpdates &rarr; copy Chat ID<br>Paste both below and Save. Your ID: <strong style="color:var(--blue)">@KuldepKalle</strong></div>
+    <div class="rw"><span class="rl">Bot Token</span><input id="tg-token" type="text" placeholder="123456789:ABC-DEF..." style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:290px"></div>
+    <div class="rw"><span class="rl">Chat ID</span><input id="tg-chatid" type="text" placeholder="Your chat_id number" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:290px"></div>
+    <div class="rw"><span class="rl">Status</span><span id="tg-status" class="tag tw">Not configured</span></div>
+    <div style="display:flex;gap:7px;margin-top:9px"><button class="btn" onclick="saveTelegram()" style="font-size:8px;padding:4px 12px;border-color:rgba(96,165,250,.4);color:var(--blue)">Save</button><button class="btn" onclick="testTelegram()" style="font-size:8px;padding:4px 12px">Send Test</button></div>
+  </div>
+  <div class="card" style="border-color:rgba(34,197,94,.2)">
+    <div class="stitle" style="color:var(--green)">EMAIL ALERTS (EmailJS)</div>
+    <div style="font-family:var(--mono);font-size:8px;color:var(--t3);margin-bottom:10px;line-height:1.8">1. Sign up free at <strong style="color:var(--blue)">emailjs.com</strong><br>2. Add Gmail service &rarr; create template (fields: to_email, subject, message)<br>3. Get Service ID, Template ID, Public Key and paste below</div>
+    <div class="rw"><span class="rl">Service ID</span><input id="ejs-sid" type="text" placeholder="service_xxxxxxx" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:220px"></div>
+    <div class="rw"><span class="rl">Template ID</span><input id="ejs-tid" type="text" placeholder="template_xxxxxxx" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:220px"></div>
+    <div class="rw"><span class="rl">Public Key</span><input id="ejs-key" type="text" placeholder="your_public_key" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:220px"></div>
+    <div class="rw"><span class="rl">To Email</span><input id="ejs-to" type="text" value="kuldepkalle@gmail.com" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:220px"></div>
+    <div class="rw"><span class="rl">Status</span><span id="ejs-status" class="tag tw">Not configured</span></div>
+    <div style="display:flex;gap:7px;margin-top:9px"><button class="btn" onclick="saveEmail()" style="font-size:8px;padding:4px 12px;border-color:rgba(34,197,94,.4);color:var(--green)">Save</button><button class="btn" onclick="testEmail()" style="font-size:8px;padding:4px 12px">Send Test</button></div>
+  </div>
+</div></div>
+
+
+<!-- NEWS TAB -->
 <div id="tc-news" class="tc"><div class="main">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;flex-wrap:wrap;gap:8px">
     <span class="stitle" style="margin:0;border:none;padding:0">NEWS CALENDAR</span>
@@ -521,8 +659,9 @@ function setTag(id,cls,txt){var e=gel(id);if(e){e.className='tag '+cls;e.textCon
 function toast(msg){var el=gel('toast');if(!el)return;el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove('show');},2200);}
 
 // ═══ TABS ════════════════════════════════════════
+var sfilt='all';
 function sw(name,el){
-  ['xau','btc','news','jnl'].forEach(function(t){
+  ['xau','btc','sigs','news','jnl','notif'].forEach(function(t){
     var tc=gel('tc-'+t);if(tc)tc.classList.remove('on');
   });
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
@@ -533,6 +672,8 @@ function sw(name,el){
   if(b247)b247.style.display=(name==='btc'?'flex':'none');
   if(name==='jnl')renderJnl();
   if(name==='news')renderNews();
+  if(name==='sigs')renderAllSigs();
+  if(name==='notif')loadNotifSettings();
 }
 
 // ═══ THEME & SOUND ═══════════════════════════════
@@ -547,7 +688,7 @@ function snd(type){
     (N[type]||N.signal_buy).forEach(function(n){
       var o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);
       o.frequency.value=n[0];o.type='sine';var t=ctx.currentTime+n[1];
-      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+n[2]);
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(alertVolume||0.65,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+n[2]);
       o.start(t);o.stop(t+n[2]+.05);
     });
   }catch(e){}
@@ -1020,7 +1161,7 @@ function buildCard(sig,latest){
     +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px">'+(sig.reasons||[]).map(function(r){return'<span class="reason">'+r+'</span>';}).join('')+'</div>'
     +'<div class="sc-bar">'+(open?'<span class="ob open">OPEN</span><span style="font-family:var(--mono);font-size:9px;font-weight:700;color:'+(pnl>=0?'var(--green)':'var(--red)')+'">'+( pnl>=0?'+':'')+pnl+(isBTC?'$':'p')+' live</span><div class="pbar"><div class="pbfill" style="width:'+prog+'%;background:'+(prog>75?'var(--green)':prog>40?'var(--amber)':'var(--blue)')+'"></div></div><span style="font-family:var(--mono);font-size:8px;color:var(--t3)">TP '+prog+'%</span>'
     :sig.outcome==='tp1'||sig.outcome==='tp2'?'<span class="ob tp">✅ '+sig.outcome.toUpperCase()+' +'+( sig.pnlPips||0)+(isBTC?'$':'p')+'</span>':'<span class="ob sl">❌ SL '+(sig.pnlPips||0)+(isBTC?'$':'p')+'</span>')+'</div>'
-    +(open?'<div class="mbtns"><button class="btn green" style="font-size:7px;padding:2px 7px" onclick="markSig(\''+sym.toLowerCase()+'\','+sig.id+',\'tp1\')">✅ TP1</button><button class="btn green" style="font-size:7px;padding:2px 7px" onclick="markSig(\''+sym.toLowerCase()+'\','+sig.id+',\'tp2\')">✅ TP2</button><button class="btn red" style="font-size:7px;padding:2px 7px" onclick="markSig(\''+sym.toLowerCase()+'\','+sig.id+',\'sl\')">❌ SL</button></div>':'')
+    +(open?'<div class="mbtns" data-sym="'+sym.toLowerCase()+'" data-id="'+sig.id+'"><button class="btn green" style="font-size:7px;padding:2px 7px" data-outcome="tp1">✅ TP1</button><button class="btn green" style="font-size:7px;padding:2px 7px" data-outcome="tp2">✅ TP2</button><button class="btn red" style="font-size:7px;padding:2px 7px" data-outcome="sl">❌ SL</button></div>':'')
     +'</div>';
 }
 
@@ -1141,11 +1282,189 @@ function renderNewsCompact(){
 }
 
 // ═══ INIT ════════════════════════════════════════
+// ═══ ALERT VOLUME ════════════════════════════════
+var alertVolume=0.65;
+var sfilt='all';
+var tgToken='',tgChatId='';
+var ejsConfig={sid:'',tid:'',key:'',to:'kuldepkalle@gmail.com'};
+
+// ═══ SIGNALS TAB ═════════════════════════════════
+function renderAllSigs(){
+  var all=xauSigs.concat(btcSigs).slice().sort(function(a,b){return(b.id||0)-(a.id||0);});
+  var filtered=all.filter(function(s){
+    if(sfilt==='xau')return s.sym==='XAU';if(sfilt==='btc')return s.sym==='BTC';
+    if(sfilt==='open')return s.outcome==='open';
+    if(sfilt==='tp')return s.outcome==='tp1'||s.outcome==='tp2';
+    if(sfilt==='sl')return s.outcome==='sl';
+    return true;
+  });
+  var openCt=all.filter(function(s){return s.outcome==='open';}).length;
+  var tpCt=all.filter(function(s){return s.outcome==='tp1'||s.outcome==='tp2';}).length;
+  var slCt=all.filter(function(s){return s.outcome==='sl';}).length;
+  var closed=all.filter(function(s){return s.outcome!=='open';});
+  var np=closed.reduce(function(a,s){return a+(s.pnlPips||0);},0);
+  set('sig-open-ct',openCt);set('sig-tp-ct',tpCt);set('sig-sl-ct',slCt);
+  var pe=gel('sig-pnl-ct');if(pe){pe.textContent=(np>=0?'+':'')+np+'p';pe.className='val '+(np>=0?'up':'dn');}
+  var el=gel('sig-all-list');if(!el)return;
+  if(!filtered.length){el.innerHTML='<div style="text-align:center;color:var(--t3);font-family:var(--mono);font-size:10px;padding:30px">'+(all.length===0?'No signals yet.':'No signals match this filter.')+'</div>';return;}
+  el.innerHTML=filtered.map(function(s){return buildFullCard(s);}).join('');
+}
+
+function buildFullCard(sig){
+  var bull=sig.dir==='BUY',open=sig.outcome==='open';
+  var p=(sig.sym==='XAU'?XAU:BTC).price||sig.entry;
+  var isBTC=sig.sym==='BTC';
+  var pnl=open?(isBTC?(bull?Math.round(p-sig.entry):Math.round(sig.entry-p)):(bull?Math.round((p-sig.entry)*100):Math.round((sig.entry-p)*100))):(sig.pnlPips||0);
+  var prog=open&&sig.tp1!==sig.entry?Math.min(100,Math.max(0,Math.round((bull?p-sig.entry:sig.entry-p)/(bull?sig.tp1-sig.entry:sig.entry-sig.tp1)*100))):0;
+  var ouClass=open?'open':sig.outcome==='tp1'||sig.outcome==='tp2'?'tp':'sl';
+  return '<div class="sc '+(sig.quality==='A+'?'ap':'ag')+' '+(ouClass==='tp'?'tp':ouClass==='sl'?'sl':'')+'" style="border-width:1.5px">'
+    +'<div class="sc-hdr">'
+    +'<span class="gb2 '+(sig.quality==='A+'?'ap':'ag')+'">'+sig.quality+' \xb7 '+sig.score+'/10</span>'
+    +'<span class="tag '+(isBTC?'ti':'tg')+'">'+sig.sym+'</span>'
+    +'<span class="tag '+(bull?'tb':'ts')+'">'+sig.dir+'</span>'
+    +'<span style="font-family:var(--mono);font-size:8px;color:var(--t3)"><strong style="color:var(--gold)">'+sig.date+'</strong> '+sig.time+'</span>'
+    +'<span class="tag ti" style="margin-left:auto">'+sig.session+'</span></div>'
+    +'<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px">'
+    +'<div class="sb"><div class="sk">ENTRY</div><div class="sv" style="color:var(--gold)">'+fmt(sig.entry)+'</div></div>'
+    +'<div class="sb"><div class="sk">STOP LOSS</div><div class="sv" style="color:var(--red)">'+fmt(sig.sl)+'<span style="font-size:7px;color:var(--t3)"> '+sig.slPips+(isBTC?'$':'p')+'</span></div></div>'
+    +'<div class="sb"><div class="sk">TP1</div><div class="sv" style="color:var(--green)">'+fmt(sig.tp1)+'</div></div>'
+    +'<div class="sb"><div class="sk">TP2</div><div class="sv" style="color:var(--teal)">'+fmt(sig.tp2)+'</div></div>'
+    +'<div class="sb"><div class="sk">R:R</div><div class="sv" style="color:var(--teal)">1:'+sig.rr+'</div></div>'
+    +'<div class="sb"><div class="sk">'+(open?'LIVE P&L':'P&L')+'</div><div class="sv" style="color:'+(pnl>=0?'var(--green)':'var(--red)')+'">'+( pnl>=0?'+':'')+pnl+(isBTC?'$':'p')+'</div></div>'
+    +'</div>'
+    +(sig.vwap?'<div style="font-family:var(--mono);font-size:8px;color:var(--t3);margin-bottom:6px">VWAP: '+fmt(sig.vwap)+' \xb7 EMA9: '+fmt(sig.ema9)+'</div>':'')
+    +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">'+(sig.reasons||[]).map(function(r){return'<span class="reason">'+r+'</span>';}).join('')+'</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+    +(open?'<span class="ob open">OPEN</span><div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="width:'+prog+'%;height:100%;border-radius:3px;background:'+(prog>75?'var(--green)':prog>40?'var(--amber)':'var(--blue)')+'"></div></div><span style="font-family:var(--mono);font-size:8px;color:var(--t3)">TP '+prog+'%</span>'
+    :ouClass==='tp'?'<span class="ob tp">&#x2705; '+sig.outcome.toUpperCase()+' HIT &middot; +'+(sig.pnlPips||0)+(isBTC?'$':'p')+'</span>':'<span class="ob sl">&#x274C; SL HIT &middot; '+(sig.pnlPips||0)+(isBTC?'$':'p')+'</span>')
+    +'</div>'
+    +'<div style="font-family:var(--mono);font-size:8px;color:var(--t3);margin-bottom:5px">Update outcome:</div>'
+    +'<div class="mbtns" data-sym="'+sig.sym.toLowerCase()+'" data-id="'+sig.id+'">'
+    +'<button class="btn green" style="font-size:8px;padding:3px 10px" data-outcome="tp1">&#x2705; TP1 Hit</button>'
+    +'<button class="btn" style="font-size:8px;padding:3px 10px;border-color:rgba(45,212,191,.4);color:var(--teal)" data-outcome="tp2">&#x2705; TP2 Hit</button>'
+    +'<button class="btn red" style="font-size:8px;padding:3px 10px" data-outcome="sl">&#x274C; SL Hit</button>'
+    +'<button class="btn" style="font-size:8px;padding:3px 10px" data-outcome="open">&#x21A9; Reopen</button>'
+    +'</div>'
+    +'</div>';
+}
+
+// markSig — fixed version with renderAllSigs + notifications
+function markSig(sym,id,outcome){
+  var sigs=sym==='btc'?btcSigs:xauSigs;
+  var s=sigs.find(function(x){return x.id===id;});
+  if(!s){toast('Signal not found');return;}
+  s.outcome=outcome;
+  if(outcome==='open'){s.pnlPips=null;}
+  else if(outcome==='sl'){s.pnlPips=-s.slPips;}
+  else if(outcome==='tp2'){s.pnlPips=Math.round(s.tp1Pips*1.8);}
+  else{s.pnlPips=s.tp1Pips;}
+  saveSigs(sym);
+  renderSigs(sym);renderAllSigs();renderJnl();
+  snd(outcome==='sl'?'sl_hit':outcome==='open'?'signal_buy':'tp_hit');
+  var msg=(outcome==='open'?'Reopened':outcome==='sl'?'SL Hit':'TP '+outcome.toUpperCase()+' Hit')+' | '+s.dir+' '+s.sym+' @ '+fmt(s.entry);
+  toast(msg);
+  sendTelegramMsg('Trade Updated: '+msg+'\nOutcome: '+outcome.toUpperCase()+'\nEntry: '+fmt(s.entry)+'\nP&L: '+(s.pnlPips||0)+(s.sym==='BTC'?'$':'p'));
+  sendEmail('VWAPgold Trade Update: '+s.sym,msg+'\nEntry: '+fmt(s.entry)+'\nSL: '+fmt(s.sl)+'\nTP1: '+fmt(s.tp1)+'\nOutcome: '+outcome.toUpperCase());
+}
+
+// ═══ TELEGRAM ════════════════════════════════════
+function saveTelegram(){
+  tgToken=(gel('tg-token')||{value:''}).value.trim();
+  tgChatId=(gel('tg-chatid')||{value:''}).value.trim();
+  localStorage.setItem('ve_tg',JSON.stringify({t:tgToken,c:tgChatId}));
+  setTag('tg-status',tgToken&&tgChatId?'tb':'tw',tgToken&&tgChatId?'Configured':'Incomplete');
+  toast(tgToken&&tgChatId?'Telegram saved':'Enter both token and chat ID');
+}
+function loadTelegram(){
+  try{var d=JSON.parse(localStorage.getItem('ve_tg')||'{}');
+    tgToken=d.t||'';tgChatId=d.c||'';
+    var te=gel('tg-token'),ce=gel('tg-chatid');
+    if(te)te.value=tgToken;if(ce)ce.value=tgChatId;
+    if(tgToken&&tgChatId)setTag('tg-status','tb','Configured');
+  }catch(e){}
+}
+function sendTelegramMsg(text){
+  if(!tgToken||!tgChatId)return;
+  fetch('https://api.telegram.org/bot'+tgToken+'/sendMessage',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({chat_id:tgChatId,text:text})
+  }).catch(function(){});
+}
+function testTelegram(){
+  if(!tgToken||!tgChatId){toast('Save token and chat ID first');return;}
+  sendTelegramMsg('VWAPgold Test\nTelegram alerts are working!\nYour dashboard is connected.');
+  toast('Test message sent to Telegram');
+}
+
+// ═══ EMAIL (EmailJS) ══════════════════════════════
+function saveEmail(){
+  ejsConfig.sid=(gel('ejs-sid')||{value:''}).value.trim();
+  ejsConfig.tid=(gel('ejs-tid')||{value:''}).value.trim();
+  ejsConfig.key=(gel('ejs-key')||{value:''}).value.trim();
+  ejsConfig.to=(gel('ejs-to')||{value:'kuldepkalle@gmail.com'}).value.trim()||'kuldepkalle@gmail.com';
+  localStorage.setItem('ve_ejs',JSON.stringify(ejsConfig));
+  var ok=ejsConfig.sid&&ejsConfig.tid&&ejsConfig.key;
+  setTag('ejs-status',ok?'tb':'tw',ok?'Configured':'Incomplete');
+  if(ok){
+    if(!window.emailjs){
+      var sc=document.createElement('script');
+      sc.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+      sc.onload=function(){if(window.emailjs)emailjs.init(ejsConfig.key);};
+      document.head.appendChild(sc);
+    }else{emailjs.init(ejsConfig.key);}
+  }
+  toast(ok?'Email settings saved':'Fill all EmailJS fields');
+}
+function loadEmailConfig(){
+  try{var d=JSON.parse(localStorage.getItem('ve_ejs')||'{}');
+    ejsConfig=Object.assign({sid:'',tid:'',key:'',to:'kuldepkalle@gmail.com'},d);
+    var fs=['ejs-sid','ejs-tid','ejs-key','ejs-to'],ks=['sid','tid','key','to'];
+    fs.forEach(function(id,i){var e=gel(id);if(e)e.value=ejsConfig[ks[i]];});
+    var ok=ejsConfig.sid&&ejsConfig.tid&&ejsConfig.key;
+    if(ok){setTag('ejs-status','tb','Configured');if(window.emailjs)emailjs.init(ejsConfig.key);}
+  }catch(e){}
+}
+function sendEmail(subject,body){
+  if(!ejsConfig.sid||!ejsConfig.tid||!ejsConfig.key)return;
+  if(!window.emailjs){return;}
+  emailjs.send(ejsConfig.sid,ejsConfig.tid,{to_email:ejsConfig.to,subject:subject,message:body})
+    .catch(function(){});
+}
+function testEmail(){
+  if(!ejsConfig.sid){toast('Save EmailJS settings first');return;}
+  sendEmail('VWAPgold Alert Test','Test email from VWAPgold dashboard.\nEmail alerts are working!');
+  toast('Test email sent to '+ejsConfig.to);
+}
+
+function loadNotifSettings(){
+  loadTelegram();loadEmailConfig();
+  var sb=gel('notif-sound-btn');if(sb)sb.textContent=soundOn?'ON':'OFF';
+  var vs=gel('vol-slider');if(vs)vs.value=alertVolume;
+  var vp=gel('vol-pct');if(vp)vp.textContent=Math.round(alertVolume*100)+'%';
+}
+
+// Override showAlert to include Telegram + Email
+function showAlert(sym,type,title,body){
+  snd(type==='ap'?'signal_ap':type==='buy'?'signal_buy':'signal_sell');
+  var box=gel('nalbox');if(box){
+    var div=document.createElement('div');div.className='nal '+sym;
+    div.innerHTML='<span class="nalx" onclick="this.parentNode.remove()">x</span><div style="font-weight:700;margin-bottom:2px">'+title+'</div><div style="color:var(--t3);font-size:8px">'+body+'</div>';
+    box.insertBefore(div,box.firstChild);
+    setTimeout(function(){if(div.parentNode)div.remove();},10000);
+    while(box.children.length>5)box.removeChild(box.lastChild);
+  }
+  if('Notification' in window&&Notification.permission==='granted'){
+    try{new Notification('VWAPgold: '+title,{body:body});}catch(e){}
+  }
+  sendTelegramMsg('SIGNAL ALERT: '+title+'\n'+body+'\nTime: '+new Date().toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata'})+' IST');
+  sendEmail('VWAPgold Signal: '+title,title+'\n\n'+body+'\n\nTime (IST): '+new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}));
+}
+
 async function requestWakeLock(){try{if('wakeLock' in navigator)await navigator.wakeLock.request('screen');}catch(e){}}
 function init(){
   applyTheme(localStorage.getItem('vet')==='l');
   soundOn=localStorage.getItem('ves')!=='0';set('sbtn',soundOn?'🔔 ON':'🔕 OFF');
-  loadSigs();
+  loadSigs();loadTelegram();loadEmailConfig();
   renderSigs('xau');renderSigs('btc');renderJnl();
   fetchDailyOpens();
   fetchXAU();fetchBTC();
@@ -1161,6 +1480,29 @@ function init(){
   document.addEventListener('click',function(){try{new(window.AudioContext||window.webkitAudioContext)().resume();}catch(e){}},{once:true});
 }
 init();
+
+// Event delegation for TP/SL buttons (data-attribute approach)
+document.addEventListener('click',function(e){
+  var btn=e.target.closest('[data-outcome]');
+  if(!btn)return;
+  var wrap=btn.closest('[data-sym][data-id]');
+  if(!wrap)return;
+  markSig(wrap.getAttribute('data-sym'),parseInt(wrap.getAttribute('data-id'),10),btn.getAttribute('data-outcome'));
+});
+
+
+// ═══ EVENT DELEGATION — handles TP/SL button clicks via data-attributes ═══
+document.addEventListener('click', function(e){
+  var btn=e.target.closest('[data-outcome]');
+  if(!btn)return;
+  var wrap=btn.closest('[data-sym][data-id]');
+  if(!wrap)return;
+  var sym=wrap.getAttribute('data-sym');
+  var id=parseInt(wrap.getAttribute('data-id'),10);
+  var outcome=btn.getAttribute('data-outcome');
+  markSig(sym,id,outcome);
+});
+
 </script>
 </body>
 </html>
