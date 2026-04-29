@@ -109,7 +109,7 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
 .ccol{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;}
 .cbar{width:12px;border-radius:1px;min-height:3px;}
 .cbar.bull{background:var(--green);}.cbar.bear{background:var(--red);}
-.cbar.cur{background:var(--gold);}
+.cbar.cur{background:var(--gold);animation:pulse 1s infinite;}
 .mkt-closed .cbar.cur{animation:none;opacity:.4;}
 .ctime{font-family:var(--mono);font-size:6px;color:var(--t3);text-align:center;}
 /* NEWS */
@@ -563,14 +563,34 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
     <div style="display:flex;gap:7px;margin-top:9px"><button class="btn" onclick="saveTelegram()" style="font-size:8px;padding:4px 12px;border-color:rgba(96,165,250,.4);color:var(--blue)">Save</button><button class="btn" onclick="testTelegram()" style="font-size:8px;padding:4px 12px">Send Test</button></div>
   </div>
   <div class="card" style="border-color:rgba(34,197,94,.2)">
-    <div class="stitle" style="color:var(--green)">EMAIL ALERTS (EmailJS)</div>
-    <div style="font-family:var(--mono);font-size:8px;color:var(--t3);margin-bottom:10px;line-height:1.8">1. Sign up free at <strong style="color:var(--blue)">emailjs.com</strong><br>2. Add Gmail service &rarr; create template (fields: to_email, subject, message)<br>3. Get Service ID, Template ID, Public Key and paste below</div>
+    <div class="stitle" style="color:var(--green)">EMAIL ALERTS (EmailJS — Fix 412 Error)</div>
+    <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:4px;padding:9px 11px;margin-bottom:10px;font-family:var(--mono);font-size:8px;color:var(--red);line-height:1.8">
+      <strong>If you see "412 insufficient authentication scopes":</strong><br>
+      1. Go to <strong>emailjs.com</strong> &rarr; Email Services<br>
+      2. Click your Gmail service &rarr; <strong>Reconnect Account</strong><br>
+      3. Sign in again &rarr; check <strong>"Send email on your behalf"</strong> scope<br>
+      4. Use <strong>Gmail</strong> service type (NOT Gmail API)
+    </div>
+    <div style="font-family:var(--mono);font-size:8px;color:var(--t3);margin-bottom:10px;line-height:1.8">
+      Setup steps:<br>
+      1. <strong style="color:var(--t1)">emailjs.com</strong> &rarr; Sign up free &rarr; Add Email Service &rarr; choose <strong>Gmail</strong><br>
+      2. Connect your Gmail &amp; allow "Send email" permission<br>
+      3. Email Templates &rarr; Create template &rarr; add variables: <strong style="color:var(--gold)">{{to_email}} {{subject}} {{message}}</strong><br>
+      4. Account &rarr; copy <strong>Public Key</strong>
+    </div>
     <div class="rw"><span class="rl">Service ID</span><input id="ejs-sid" type="text" placeholder="service_xxxxxxx" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:220px"></div>
     <div class="rw"><span class="rl">Template ID</span><input id="ejs-tid" type="text" placeholder="template_xxxxxxx" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:220px"></div>
-    <div class="rw"><span class="rl">Public Key</span><input id="ejs-key" type="text" placeholder="your_public_key" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:220px"></div>
+    <div class="rw"><span class="rl">Public Key</span><input id="ejs-key" type="text" placeholder="xxxxxxxxxxxxxxxxxxxx" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:220px"></div>
     <div class="rw"><span class="rl">To Email</span><input id="ejs-to" type="text" value="kuldepkalle@gmail.com" style="flex:1;background:var(--bg3);border:1px solid var(--b2);color:var(--t1);font-family:var(--mono);font-size:9px;padding:5px 8px;border-radius:3px;outline:none;max-width:220px"></div>
     <div class="rw"><span class="rl">Status</span><span id="ejs-status" class="tag tw">Not configured</span></div>
-    <div style="display:flex;gap:7px;margin-top:9px"><button class="btn" onclick="saveEmail()" style="font-size:8px;padding:4px 12px;border-color:rgba(34,197,94,.4);color:var(--green)">Save</button><button class="btn" onclick="testEmail()" style="font-size:8px;padding:4px 12px">Send Test</button></div>
+    <div style="display:flex;gap:7px;margin-top:9px;flex-wrap:wrap">
+      <button class="btn" onclick="saveEmail()" style="font-size:8px;padding:4px 12px;border-color:rgba(34,197,94,.4);color:var(--green)">Save</button>
+      <button class="btn" onclick="testEmail()" style="font-size:8px;padding:4px 12px">Send Test</button>
+      <button class="btn" onclick="openMailto()" style="font-size:8px;padding:4px 12px;color:var(--amber)">Open Gmail (manual)</button>
+    </div>
+    <div style="margin-top:10px;padding:8px 10px;background:var(--bg3);border-radius:4px;font-family:var(--mono);font-size:8px;color:var(--t3);line-height:1.7">
+      <strong style="color:var(--t1)">Alternative: Telegram is more reliable.</strong> No OAuth needed — just @BotFather, paste token + chat ID above. Signals arrive instantly on your phone.
+    </div>
   </div>
 </div></div>
 
@@ -694,14 +714,7 @@ function snd(type){
   }catch(e){}
 }
 function reqNotif(){if('Notification' in window)Notification.requestPermission().then(function(p){toast(p==='granted'?'✓ Alerts enabled':'Permission denied');});}
-function showAlert(sym,type,title,body){
-  snd(type==='ap'?'signal_ap':type==='buy'?'signal_buy':'signal_sell');
-  var box=gel('nalbox');if(!box)return;
-  var div=document.createElement('div');div.className='nal '+sym;
-  div.innerHTML='<span class="nalx" onclick="this.parentNode.remove()">✕</span><div style="font-weight:700;margin-bottom:2px">'+title+'</div><div style="color:var(--t3);font-size:8px">'+body+'</div>';
-  box.insertBefore(div,box.firstChild);setTimeout(function(){if(div.parentNode)div.remove();},9000);
-  while(box.children.length>5)box.removeChild(box.lastChild);
-}
+// showAlert defined below (single definition)
 
 // ═══ CLOCK + SESSIONS ════════════════════════════
 var KZ={ASIAN:[270,570],LONDON:[690,870],NY:[990,1110],SILVER:[1170,1230],DEAD:[1260,1350]};
@@ -976,6 +989,7 @@ function renderPrice(sym){
   }
   // Update browser tab title with live prices
   updateTabTitle();
+  autoMarkSigs();
 }
 
 function updateTabTitle(){
@@ -1042,6 +1056,9 @@ function renderVol(sym,candles){
   var sig=rel>100?'VERY HIGH':rel>50?'HIGH':rel>20?'ABOVE AVG':rel<-30?'LOW':'NORMAL';
   var se=gel(sym+'-vs');if(se){se.textContent=sig;se.style.color=rel>50?'var(--gold)':rel>20?'var(--green)':rel<-30?'var(--red)':'var(--amber)';}
   set(sym+'-vol-info','Binance · 30M · '+candles.length+' bars');
+  // Scroll to show latest candle
+  var volEl=gel(sym+'-vol');
+  if(volEl)setTimeout(function(){volEl.scrollLeft=volEl.scrollWidth;},50);
 }
 
 // ═══ RUN ANALYSIS (called every second) ══════════
@@ -1076,8 +1093,8 @@ function checkSignal(sym,res,price){
   // Cooldown 3h per direction
   var lastBuy=isBTC?btcLastBuy:xauLastBuy;
   var lastSell=isBTC?btcLastSell:xauLastSell;
-  if(res.dir==='bull'&&(now-lastBuy<10800000))return;
-  if(res.dir==='bear'&&(now-lastSell<10800000))return;
+  if(res.dir==='bull'&&(now-lastBuy<5400000))return; // 1.5h cooldown
+  if(res.dir==='bear'&&(now-lastSell<5400000))return; // 1.5h cooldown
 
   // Max 3 per direction per day
   var sigs=isBTC?btcSigs:xauSigs;
@@ -1117,10 +1134,82 @@ function checkSignal(sym,res,price){
     reasons:res.reasons.slice(0,4)
   };
   if(isBTC){btcSigs.push(sig);saveSigs('btc');}else{xauSigs.push(sig);saveSigs('xau');}
-  renderSigs(sym);renderJnl();
+  renderSigs(sym);renderJnl();renderAllSigs();
+  lastSignalTime=Date.now();
   var bull=res.dir==='bull';
   showAlert(sym,res.grade==='A+'?'ap':(bull?'buy':'sell'),res.grade+' '+sig.dir+' '+sym.toUpperCase()+' @ '+fmt(sig.entry),res.reasons.slice(0,3).join(' · ')+' · SL: '+slPips+(isBTC?'$':'p')+' · R:R 1:'+sig.rr);
 }
+
+
+// ═══ AUTO-MARK TP/SL BASED ON LIVE PRICE ════════
+var lastAutoCheck=0;
+function autoMarkSigs(){
+  var now=Date.now();
+  if(now-lastAutoCheck<2000)return; // check every 2 seconds
+  lastAutoCheck=now;
+  var xauP=XAU.price,btcP=BTC.price;
+  function checkSigs(sigs,sym,price){
+    if(!price||price<1)return;
+    var changed=false;
+    sigs.forEach(function(sig){
+      if(sig.outcome!=='open'&&sig.outcome!=='tp1')return; // skip fully closed
+      var bull=sig.dir==='BUY';
+      // Check TP2 first (highest priority if already at TP1)
+      if(sig.outcome==='tp1'){
+        var tp2Hit=bull?(price>=sig.tp2):(price<=sig.tp2);
+        if(tp2Hit){
+          sig.outcome='tp2';sig.pnlPips=Math.round(sig.tp1Pips*1.8);
+          changed=true;
+          var msg='TP2 HIT: '+sig.dir+' '+sym.toUpperCase()+' @ '+sig.entry.toFixed(2)+' → '+price.toFixed(2);
+          sendTelegramMsg('✅ '+msg);sendEmail('VWAPgold TP2 Hit',msg);
+          snd('tp_hit');toast('✅ TP2 Hit: '+sig.sym+' '+sig.dir);
+        }
+        return;
+      }
+      // Open trade: check TP1 then SL
+      var tp1Hit=bull?(price>=sig.tp1):(price<=sig.tp1);
+      var slHit=bull?(price<=sig.sl):(price>=sig.sl);
+      if(tp1Hit){
+        sig.outcome='tp1';sig.pnlPips=sig.tp1Pips;changed=true;
+        var msg='TP1 HIT: '+sig.dir+' '+sym.toUpperCase()+' @ '+sig.entry.toFixed(2)+' → '+price.toFixed(2)+' (+'+sig.tp1Pips+(sym==='BTC'?'$':'p')+')';
+        sendTelegramMsg('✅ '+msg);sendEmail('VWAPgold TP1 Hit',msg);
+        snd('tp_hit');toast('✅ TP1 Hit: '+sig.sym+' '+sig.dir);
+      } else if(slHit){
+        sig.outcome='sl';sig.pnlPips=-sig.slPips;changed=true;
+        var msg='SL HIT: '+sig.dir+' '+sym.toUpperCase()+' @ '+sig.entry.toFixed(2)+' → '+price.toFixed(2)+' (-'+sig.slPips+(sym==='BTC'?'$':'p')+')';
+        sendTelegramMsg('❌ '+msg);sendEmail('VWAPgold SL Hit',msg);
+        snd('sl_hit');toast('❌ SL Hit: '+sig.sym+' '+sig.dir);
+      }
+    });
+    if(changed){saveSigs(sym);renderSigs(sym);renderAllSigs();renderJnl();}
+  }
+  checkSigs(xauSigs,'xau',xauP);
+  checkSigs(btcSigs,'btc',btcP);
+}
+
+// ═══ PERIODIC NO-ALERT STATUS ════════════════════
+var lastSignalTime=Date.now();
+var lastNoAlertNotif=0;
+function checkNoAlertStatus(){
+  var now=Date.now();
+  var hoursSinceSignal=(now-lastSignalTime)/3600000;
+  // Notify via Telegram every 4 hours if no signal
+  if(hoursSinceSignal>=4&&(now-lastNoAlertNotif)>14400000){
+    lastNoAlertNotif=now;
+    var msg='No signal in last '+Math.round(hoursSinceSignal)+'h. Dashboard monitoring XAU+BTC. Current time: '+new Date().toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata'})+' IST';
+    sendTelegramMsg('⏳ '+msg);
+    // Show on dashboard
+    var box=gel('nalbox');
+    if(box){
+      var div=document.createElement('div');div.className='nal xau';
+      div.style.borderColor='rgba(100,116,139,.4)';
+      div.innerHTML='<span class="nalx" onclick="this.parentNode.remove()">x</span><div style="font-weight:700;margin-bottom:2px">No Signal ('+Math.round(hoursSinceSignal)+'h)</div><div style="color:var(--t3);font-size:8px">Dashboard active. No A/A+ setup yet. Watching 4H+1H candle closes.</div>';
+      box.insertBefore(div,box.firstChild);
+      setTimeout(function(){if(div.parentNode)div.remove();},15000);
+    }
+  }
+}
+
 
 // ═══ SIGNAL STORAGE + RENDER ═════════════════════
 function saveSigs(sym){try{localStorage.setItem('ve_'+sym,JSON.stringify(sym==='btc'?btcSigs:xauSigs));}catch(e){}}
@@ -1465,18 +1554,20 @@ function init(){
   applyTheme(localStorage.getItem('vet')==='l');
   soundOn=localStorage.getItem('ves')!=='0';set('sbtn',soundOn?'🔔 ON':'🔕 OFF');
   loadSigs();loadTelegram();loadEmailConfig();
+  setTimeout(autoMarkSigs,2000); // auto-mark any stale open signals
   renderSigs('xau');renderSigs('btc');renderJnl();
   fetchDailyOpens();
   fetchXAU();fetchBTC();
   fetchAllCandles();fetchNews();
   requestWakeLock();updateClock();
   setInterval(updateClock,1000);
-  setInterval(fetchXAU,1000);
-  setInterval(fetchBTC,1000);
+  setInterval(fetchXAU,100);
+  setInterval(fetchBTC,100);
   setInterval(fetchAllCandles,60000);
   setInterval(renderNews,30000);
   setInterval(fetchNews,900000);
   setInterval(function(){renderSigs('xau');renderSigs('btc');},10000);
+  setInterval(checkNoAlertStatus,300000);
   document.addEventListener('click',function(){try{new(window.AudioContext||window.webkitAudioContext)().resume();}catch(e){}},{once:true});
 }
 init();
@@ -1502,6 +1593,291 @@ document.addEventListener('click', function(e){
   var outcome=btn.getAttribute('data-outcome');
   markSig(sym,id,outcome);
 });
+// === CORE ANALYSIS v2 ===
+// ═══════════════════════════════════════════════════════════════
+// VWAP + EMA9 STRATEGY v2 — Candle Close + Crossover + S/R
+// ═══════════════════════════════════════════════════════════════
+
+// ─── SUPPORT / RESISTANCE DETECTION ─────────────────────────
+function detectSRLevels(candles){
+  if(!candles||candles.length<10)return{supports:[],resistances:[],nearSupport:false,nearResistance:false};
+  var n=candles.length,p=candles[n-1].close,tol=p*0.0025,lb=3;
+  var supports=[],resistances=[];
+  // Find pivot highs (resistance) and pivot lows (support) in closed candles
+  for(var i=lb;i<n-lb;i++){
+    var isH=true,isL=true;
+    for(var j=1;j<=lb;j++){
+      if(candles[i].high<=candles[i-j].high||candles[i].high<=candles[i+j].high)isH=false;
+      if(candles[i].low>=candles[i-j].low||candles[i].low>=candles[i+j].low)isL=false;
+    }
+    if(isH){
+      var lv=parseFloat(candles[i].high.toFixed(2));
+      if(!resistances.some(function(r){return Math.abs(r-lv)<tol*4;}))
+        resistances.push(lv);
+    }
+    if(isL){
+      var lv2=parseFloat(candles[i].low.toFixed(2));
+      if(!supports.some(function(s){return Math.abs(s-lv2)<tol*4;}))
+        supports.push(lv2);
+    }
+  }
+  supports.sort(function(a,b){return b-a;}); // nearest below price first
+  resistances.sort(function(a,b){return a-b;}); // nearest above price first
+  var nearSup=supports.filter(function(s){return s<p&&Math.abs(p-s)<p*0.008;});
+  var nearRes=resistances.filter(function(r){return r>p&&Math.abs(r-p)<p*0.008;});
+  return{
+    supports:supports.slice(0,3),
+    resistances:resistances.slice(0,3),
+    nearestSupport:supports[0]||null,
+    nearestResistance:resistances[0]||null,
+    nearSupport:nearSup.length>0,
+    nearResistance:nearRes.length>0,
+    nearSupportLevel:nearSup[0]||null,
+    nearResistanceLevel:nearRes[0]||null
+  };
+}
+
+// ─── CHECK IF A CLOSED CANDLE IS ABOVE BOTH VWAP AND EMA9 ───
+function candleClosedAboveBoth(candle,vwap,ema9){
+  if(!candle||!vwap||!ema9)return false;
+  return candle.close>vwap&&candle.close>ema9&&candle.close>candle.open; // green + above both
+}
+function candleClosedBelowBoth(candle,vwap,ema9){
+  if(!candle||!vwap||!ema9)return false;
+  return candle.close<vwap&&candle.close<ema9&&candle.close<candle.open; // red + below both
+}
+
+// ─── DETECT CROSSOVER ────────────────────────────────────────
+// Bull crossover: prev candle closed BELOW vwap or ema9, current closed ABOVE both
+function crossedAbove(prevCandle,currCandle,vwap,ema9){
+  if(!prevCandle||!currCandle||!vwap||!ema9)return false;
+  var prevAbove=prevCandle.close>vwap&&prevCandle.close>ema9;
+  var currAbove=currCandle.close>vwap&&currCandle.close>ema9&&currCandle.close>currCandle.open;
+  return !prevAbove&&currAbove; // was below, now above — fresh cross
+}
+// Bear crossover: prev candle closed ABOVE vwap or ema9, current closed BELOW both
+function crossedBelow(prevCandle,currCandle,vwap,ema9){
+  if(!prevCandle||!currCandle||!vwap||!ema9)return false;
+  var prevBelow=prevCandle.close<vwap&&prevCandle.close<ema9;
+  var currBelow=currCandle.close<vwap&&currCandle.close<ema9&&currCandle.close<currCandle.open;
+  return !prevBelow&&currBelow; // was above, now below — fresh cross
+}
+
+// ─── CORE ANALYSIS — NEW CANDLE CLOSE LOGIC ──────────────────
+function analyseVWAPEMA(sym,c4H,c1H,c15M,price,dailyOpen){
+  if(!price||price<10)return null;
+  var isClosed=(sym==='xau')&&goldClosed;
+
+  // Need at least 3 candles to check previous vs current
+  if(!c4H||c4H.length<3||!c1H||c1H.length<3)return null;
+
+  var closes4H=c4H.map(function(c){return c.close;});
+  var closes1H=c1H.map(function(c){return c.close;});
+
+  // VWAP: anchored to today's candles
+  var vwap4H=calcVWAP(c4H),ema9_4H=calcEMA9(closes4H);
+  var vwap1H=calcVWAP(c1H),ema9_1H=calcEMA9(closes1H);
+  var slope4H=ema9Slope(closes4H),slope1H=ema9Slope(closes1H);
+
+  // Previous CLOSED candles (not the current forming one)
+  var n4=c4H.length,n1=c1H.length;
+  var prev4H=c4H[n4-2],curr4H=c4H[n4-1]; // curr4H may still be forming
+  var prev1H=c1H[n1-2],curr1H=c1H[n1-1];
+  // The "confirmed" candle is the one before the current forming candle
+  var confirmed4H=c4H[n4-2]; // last CLOSED 4H candle
+  var confirmed1H=c1H[n1-2]; // last CLOSED 1H candle
+  var prevPrev4H=c4H[n4-3];  // candle before that (to detect cross)
+  var prevPrev1H=c1H[n1-3];
+
+  // 15M for entry timing
+  var conf15=detect15MPattern(c15M);
+
+  // ── BUY conditions ──────────────────────────────────────────
+  // 1. Last CLOSED 4H candle is GREEN and closed ABOVE both VWAP+EMA9
+  var bull4H_closed=candleClosedAboveBoth(confirmed4H,vwap4H,ema9_4H);
+  // 2. Last CLOSED 1H candle is GREEN and closed ABOVE both VWAP+EMA9
+  var bull1H_closed=candleClosedAboveBoth(confirmed1H,vwap1H,ema9_1H);
+  // 3. 4H crossover: previous candle was NOT above, now it is
+  var cross4H_bull=crossedAbove(prevPrev4H,confirmed4H,vwap4H,ema9_4H);
+  // 4. 1H crossover: previous candle was NOT above, now it is
+  var cross1H_bull=crossedAbove(prevPrev1H,confirmed1H,vwap1H,ema9_1H);
+  // Also consider: 4H+1H both already above (continuation after cross)
+  var cont4H_bull=confirmed4H&&confirmed4H.close>vwap4H&&confirmed4H.close>ema9_4H&&confirmed4H.close>confirmed4H.open;
+  var cont1H_bull=confirmed1H&&confirmed1H.close>vwap1H&&confirmed1H.close>ema9_1H&&confirmed1H.close>confirmed1H.open;
+
+  // ── SELL conditions ─────────────────────────────────────────
+  var bear4H_closed=candleClosedBelowBoth(confirmed4H,vwap4H,ema9_4H);
+  var bear1H_closed=candleClosedBelowBoth(confirmed1H,vwap1H,ema9_1H);
+  var cross4H_bear=crossedBelow(prevPrev4H,confirmed4H,vwap4H,ema9_4H);
+  var cross1H_bear=crossedBelow(prevPrev1H,confirmed1H,vwap1H,ema9_1H);
+  var cont4H_bear=confirmed4H&&confirmed4H.close<vwap4H&&confirmed4H.close<ema9_4H&&confirmed4H.close<confirmed4H.open;
+  var cont1H_bear=confirmed1H&&confirmed1H.close<vwap1H&&confirmed1H.close<ema9_1H&&confirmed1H.close<confirmed1H.open;
+
+  // ── Determine direction ──────────────────────────────────────
+  var bullSetup=bull4H_closed&&bull1H_closed;
+  var bearSetup=bear4H_closed&&bear1H_closed;
+  var dir=bullSetup?'bull':bearSetup?'bear':'neutral';
+
+  // ── Score ────────────────────────────────────────────────────
+  var score=0,reasons=[];
+
+  if(dir==='bull'){
+    // Core: both TF closed green above VWAP+EMA9
+    score+=3;reasons.push('4H Green Close>VWAP+EMA9');
+    score+=3;reasons.push('1H Green Close>VWAP+EMA9');
+    // Fresh crossover bonus
+    if(cross4H_bull&&cross1H_bull){score+=1;reasons.push('Fresh Cross Both TF ★');}
+    else if(cross4H_bull||cross1H_bull){score+=0;reasons.push('Fresh Cross '+(cross4H_bull?'4H':'1H'));}
+    // EMA9 slope rising
+    if(slope4H>0&&slope1H>0){score+=1;reasons.push('EMA9 Rising Both TF');}
+    else if(slope4H>0||slope1H>0){score+=0;}
+  } else if(dir==='bear'){
+    score+=3;reasons.push('4H Red Close<VWAP+EMA9');
+    score+=3;reasons.push('1H Red Close<VWAP+EMA9');
+    if(cross4H_bear&&cross1H_bear){score+=1;reasons.push('Fresh Cross Both TF ★');}
+    else if(cross4H_bear||cross1H_bear){score+=0;reasons.push('Fresh Cross '+(cross4H_bear?'4H':'1H'));}
+    if(slope4H<0&&slope1H<0){score+=1;reasons.push('EMA9 Falling Both TF');}
+  } else {
+    // Partial signal: only one TF confirmed
+    if(cont4H_bull&&cont1H_bull){dir='bull';score+=2;reasons.push('4H+1H Above VWAP+EMA9 (cont)');}
+    else if(cont4H_bear&&cont1H_bear){dir='bear';score+=2;reasons.push('4H+1H Below VWAP+EMA9 (cont)');}
+  }
+
+  if(dir==='neutral'){
+    return{dir:'neutral',score:0,grade:'B',reasons:['No aligned candle close above/below VWAP+EMA9'],b4H:{bias:'neutral'},b1H:{bias:'neutral'},conf15:conf15,vwap4H:vwap4H,ema9_4H:ema9_4H,vwap1H:vwap1H,ema9_1H:ema9_1H,isClosed:isClosed,sr:null};
+  }
+
+  // ── S/R check for A+ upgrade ────────────────────────────────
+  var sr=detectSRLevels(c1H);
+  var atSR=false;
+  if(dir==='bull'&&sr.nearSupport){
+    score+=2;reasons.push('At Support '+sr.nearSupportLevel.toFixed(2)+' ★');atSR=true;
+  } else if(dir==='bear'&&sr.nearResistance){
+    score+=2;reasons.push('At Resistance '+sr.nearResistanceLevel.toFixed(2)+' ★');atSR=true;
+  }
+
+  // ── 15M entry confirmation ───────────────────────────────────
+  if(conf15.cross&&((dir==='bull'&&conf15.crossBull)||(dir==='bear'&&conf15.crossBear))){
+    score+=1;reasons.push('15M EMA9 Cross ★');
+  } else if(conf15.confirmed&&((dir==='bull'&&conf15.bull)||(dir==='bear'&&!conf15.bull))){
+    score+=1;reasons.push('15M '+conf15.pattern);
+  }
+
+  // ── Session bonus XAU ────────────────────────────────────────
+  if(sym==='xau'&&!isClosed){
+    var ist2=getIST(),m2=ist2.getUTCHours()*60+ist2.getUTCMinutes(),kz=getKZ(m2);
+    if(kz==='LONDON_KZ'||kz==='NY_KZ'||kz==='SILVER_BULLET'){score+=1;reasons.push(kz.replace(/_/g,' '));}
+    if(kz==='DEAD_ZONE')dir='neutral';
+  }
+
+  // ── News risk ────────────────────────────────────────────────
+  var hn=newsEvs.some(function(e){if(e.impact!=='High')return false;try{return Math.abs(((e._istDate||new Date())-new Date())/60000)<30;}catch(x){return false;}});
+  if(!hn){score+=1;reasons.push('No News Risk');}
+  else{reasons.push('News <30m');score=Math.max(0,score-1);}
+
+  var grade=score>=8?'A+':score>=6?'A':'B';
+
+  return{
+    dir:dir,score:score,grade:grade,reasons:reasons,
+    b4H:{bias:dir,vwap:vwap4H,ema9:ema9_4H,slope:slope4H,closedAbove:bull4H_closed,closedBelow:bear4H_closed,cross:cross4H_bull||cross4H_bear},
+    b1H:{bias:dir,vwap:vwap1H,ema9:ema9_1H,slope:slope1H,closedAbove:bull1H_closed,closedBelow:bear1H_closed,cross:cross1H_bull||cross1H_bear},
+    conf15:conf15,vwap4H:vwap4H,ema9_4H:ema9_4H,vwap1H:vwap1H,ema9_1H:ema9_1H,
+    isClosed:isClosed,sr:sr,atSR:atSR,
+    confirmed4H:confirmed4H,confirmed1H:confirmed1H
+  };
+}
+
+// === UPDATE PANELS v2 ===
+// ─── UPDATE ANALYSIS PANELS v2 ───────────────────
+function updatePanel(sym,res,price){
+  if(!res)return;
+  var pre=sym+'-';
+  var isBTC=sym==='btc';
+
+  if(!isBTC&&goldClosed){
+    ['xau-4h-bias','xau-1h-bias','xau-15-cross','xau-15-conf'].forEach(function(id){setTag(id,'tw','CLOSED');});
+    var sn=gel('xau-sc-num');if(sn){sn.textContent='--';sn.style.color='var(--t3)';}
+    setTag('xau-sc-grade','tw','CLOSED');
+    var sd=gel('xau-sc-dir');if(sd){sd.textContent='MARKET CLOSED';sd.style.color='var(--t3)';}
+    var act=gel('xau-sc-action');if(act)act.textContent='Gold market closed (weekend). Analysis resumes Sunday 11 PM IST.';
+    return;
+  }
+
+  var bull=res.dir==='bull';
+
+  // 4H panel
+  set(pre+'v4h',res.vwap4H?res.vwap4H.toFixed(2):'---');
+  set(pre+'e4h',res.ema9_4H?res.ema9_4H.toFixed(2):'---');
+  var b4=res.b4H;
+  setTag(pre+'4h-pvwap',b4.closedAbove?'tb':b4.closedBelow?'ts':'tw',
+    b4.closedAbove?'Closed ABOVE VWAP+EMA9':b4.closedBelow?'Closed BELOW VWAP+EMA9':'Not confirmed');
+  setTag(pre+'4h-pema',b4.closedAbove?'tb':b4.closedBelow?'ts':'tw',
+    b4.closedAbove?'GREEN candle':'RED candle');
+  setTag(pre+'4h-evwap',b4.cross?(bull?'tb':'ts'):'tw',
+    b4.cross?(bull?'Fresh Cross UP':'Fresh Cross DOWN'):(res.b4H.bias==='bull'?'Continuation':'Neutral'));
+  setTag(pre+'4h-bias',res.dir==='bull'?'tb':res.dir==='bear'?'ts':'tw',
+    res.dir==='bull'?'BULLISH':res.dir==='bear'?'BEARISH':'NEUTRAL');
+
+  // 1H panel
+  set(pre+'v1h',res.vwap1H?res.vwap1H.toFixed(2):'---');
+  set(pre+'e1h',res.ema9_1H?res.ema9_1H.toFixed(2):'---');
+  var b1=res.b1H;
+  setTag(pre+'1h-pvwap',b1.closedAbove?'tb':b1.closedBelow?'ts':'tw',
+    b1.closedAbove?'Closed ABOVE VWAP+EMA9':b1.closedBelow?'Closed BELOW VWAP+EMA9':'Not confirmed');
+  setTag(pre+'1h-pema',b1.closedAbove?'tb':b1.closedBelow?'ts':'tw',
+    b1.closedAbove?'GREEN candle':'RED candle');
+  setTag(pre+'1h-evwap',b1.cross?(bull?'tb':'ts'):'tw',
+    b1.cross?(bull?'Fresh Cross UP':'Fresh Cross DOWN'):(res.b1H.bias==='bull'?'Continuation':'Neutral'));
+  setTag(pre+'1h-bias',res.dir==='bull'?'tb':res.dir==='bear'?'ts':'tw',
+    res.dir==='bull'?'BULLISH':res.dir==='bear'?'BEARISH':'NEUTRAL');
+
+  // 15M entry panel
+  var c=res.conf15;
+  setTag(pre+'15-cross',c.cross?((c.crossBull?'tb':'ts')):'tw',
+    c.cross?(c.crossBull?'BULL CROSS ★':'BEAR CROSS ★'):'NO CROSS');
+  if(res.vwap1H){
+    setTag(pre+'15-pvwap',price>res.vwap1H?'tb':'ts',
+      price>res.vwap1H?'Price ABOVE 1H VWAP':'Price BELOW 1H VWAP');
+  }
+  setTag(pre+'15-pat',c.confirmed?'tb':'tw',c.pattern||'None');
+  var slope=b1.slope||0;
+  setTag(pre+'15-emadir',slope>0?'tb':slope<0?'ts':'tw',slope>0?'Rising ▲':slope<0?'Falling ▼':'Flat');
+  var entryConf=c.confirmed&&((res.dir==='bull'&&c.bull)||(res.dir==='bear'&&!c.bull));
+  setTag(pre+'15-conf',entryConf?'tb':'tw',entryConf?'ENTRY CONFIRMED':'WAITING');
+
+  // Score panel
+  var sn=gel(pre+'sc-num');if(sn){sn.textContent=res.score;sn.style.color=res.score>=8?'var(--green)':res.score>=6?'var(--gold)':'var(--t3)';}
+  setTag(pre+'sc-grade',res.score>=8?'tb':res.score>=6?'tg':'tw',res.grade+' · '+res.score+'/10'+(res.atSR?' ★ S/R':''));
+  var sd=gel(pre+'sc-dir');
+  if(sd){
+    sd.textContent=res.dir==='bull'?'▲ BUY SETUP':res.dir==='bear'?'▼ SELL SETUP':'WAIT';
+    sd.style.color=res.dir==='bull'?'var(--green)':res.dir==='bear'?'var(--red)':'var(--t3)';
+  }
+  // S/R info
+  var srInfo='';
+  if(res.sr){
+    if(res.sr.nearestSupport)srInfo+=' | Support: '+res.sr.nearestSupport.toFixed(2);
+    if(res.sr.nearestResistance)srInfo+=' | Resist: '+res.sr.nearestResistance.toFixed(2);
+  }
+  set(pre+'sc-tf','VWAP4H:'+( res.vwap4H?res.vwap4H.toFixed(2):'--')+' EMA9:'+( res.ema9_4H?res.ema9_4H.toFixed(2):'--')+srInfo);
+  var rEl=gel(pre+'sc-reasons');
+  if(rEl)rEl.innerHTML=res.reasons.map(function(r){return'<span class="reason">'+r+'</span>';}).join('');
+  var act=gel(pre+'sc-action');
+  if(act){
+    if(res.isClosed){act.textContent='Gold market closed. Resumes Sunday 11 PM IST.';}
+    else if(res.score>=8&&res.dir!=='neutral'){
+      var srNote=res.atSR?' at key S/R level — A+ setup!':'';
+      act.textContent='A+ '+res.dir.toUpperCase()+' SETUP'+srNote+' — 4H+1H '+(bull?'green candles closed above':'red candles closed below')+' VWAP+EMA9. Enter '+(bull?'BUY':'SELL')+' now. SL: '+(bull?'below':'above')+' VWAP '+(res.vwap1H?res.vwap1H.toFixed(2):'---')+'.';
+    } else if(res.score>=6&&res.dir!=='neutral'){
+      act.textContent='A SETUP — '+(bull?'4H+1H green candles closed above':'4H+1H red candles closed below')+' VWAP+EMA9. '+( entryConf?'15M entry confirmed — execute trade.':'Wait for 15M confirmation (EMA9 cross or Pin Bar/Engulfing).');
+    } else if(res.dir!=='neutral'){
+      act.textContent='Partial setup (score '+res.score+'/10). Need: both 4H and 1H candles to close '+(bull?'green above':'red below')+' VWAP+EMA9.';
+    } else {
+      act.textContent='No setup. Waiting for 4H+1H candles to close on same side of VWAP+EMA9. VWAP4H: '+(res.vwap4H?res.vwap4H.toFixed(2):'loading...')+', VWAP1H: '+(res.vwap1H?res.vwap1H.toFixed(2):'loading...')+'.';
+    }
+  }
+}
+
 
 </script>
 </body>
