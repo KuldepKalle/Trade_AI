@@ -863,7 +863,7 @@ function analyseVWAPEMA(sym,c4H,c1H,c15M,price,dailyOpen){
   var hn=newsEvs.some(function(e){if(e.impact!=='High')return false;try{return Math.abs(((e._istDate||new Date())-new Date())/60000)<30;}catch(x){return false;}});
   if(!hn){score+=1;reasons.push('No News Risk');}else{reasons.push('⚠ News <30m');score=Math.max(0,score-1);}
 
-  var grade=score>=8?'A+':score>=6?'A':'B';
+  var grade=score>=8?'A+':score>=5?'A':'B'; // 5+ qualifies for A in prime sessions
   return{dir:dir,score:score,grade:grade,reasons:reasons,b4H:b4H,b1H:b1H,conf15:conf15,vwap4H:vwap4H,ema9_4H:ema9_4H,vwap1H:vwap1H,ema9_1H:ema9_1H,isClosed:isClosed};
 }
 
@@ -1059,6 +1059,8 @@ function renderVol(sym,candles){
   // Scroll to show latest candle
   var volEl=gel(sym+'-vol');
   if(volEl)setTimeout(function(){volEl.scrollLeft=volEl.scrollWidth;},50);
+  // Also scroll after 200ms in case of layout reflow
+  if(volEl)setTimeout(function(){volEl.scrollLeft=volEl.scrollWidth;},200);
 }
 
 // ═══ RUN ANALYSIS (called every second) ══════════
@@ -1082,8 +1084,13 @@ function checkSignal(sym,res,price){
   var isBTC=sym==='btc';
   var closed=!isBTC&&goldClosed;
   if(closed)return; // XAU market closed on weekend
-  if(res.score<6)return;
   if(res.dir==='neutral')return;
+  // Session-aware score gate: prime sessions (London/NY) need score>=5, others>=6
+  var ist3=getIST(),m3=ist3.getUTCHours()*60+ist3.getUTCMinutes();
+  var kz3=!isBTC?getKZ(m3):'ALL';
+  var isPrime=kz3==='LONDON_KZ'||kz3==='NY_KZ'||kz3==='SILVER_BULLET';
+  var minScore=isPrime?5:6;
+  if(res.score<minScore)return;
   // Must have at minimum A grade
   var now=Date.now();
   var lastCheck=isBTC?btcLastCheck:xauLastCheck;
@@ -1122,7 +1129,7 @@ function checkSignal(sym,res,price){
   var tp1Pips=isBTC?Math.round(slDist*2):Math.round(slDist*2*100);
   if(slPips<(isBTC?50:30)||tp1Pips<(isBTC?100:60))return;
 
-  var ist2=getIST(),ts=String(ist2.getUTCHours()).padStart(2,'0')+':'+String(ist2.getUTCMinutes()).padStart(2,'0')+' IST';
+  var ist2=getIST(),ts=String(ist2.getUTCHours()).padStart(2,'0')+':'+String(ist2.getUTCMinutes()).padStart(2,'0')+':'+String(ist2.getUTCSeconds()).padStart(2,'0')+' IST';
   var kz=!isBTC?getKZ(ist2.getUTCHours()*60+ist2.getUTCMinutes()):'24/7';
   var sig={
     id:now,key:key,date:today,time:ts,sym:sym.toUpperCase(),
@@ -1196,7 +1203,7 @@ function checkNoAlertStatus(){
   // Notify via Telegram every 4 hours if no signal
   if(hoursSinceSignal>=4&&(now-lastNoAlertNotif)>14400000){
     lastNoAlertNotif=now;
-    var msg='No signal in last '+Math.round(hoursSinceSignal)+'h. Dashboard monitoring XAU+BTC. Current time: '+new Date().toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata'})+' IST';
+    var msg='No signal in last '+Math.round(hoursSinceSignal)+'h. Dashboard monitoring XAU+BTC. Current time: '+new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata',hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' IST (24h)';
     sendTelegramMsg('⏳ '+msg);
     // Show on dashboard
     var box=gel('nalbox');
@@ -1545,7 +1552,7 @@ function showAlert(sym,type,title,body){
   if('Notification' in window&&Notification.permission==='granted'){
     try{new Notification('VWAPgold: '+title,{body:body});}catch(e){}
   }
-  sendTelegramMsg('SIGNAL ALERT: '+title+'\n'+body+'\nTime: '+new Date().toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata'})+' IST');
+  sendTelegramMsg('SIGNAL ALERT: '+title+'\n'+body+'\nTime: '+new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata',hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})+' IST (24h)');
   sendEmail('VWAPgold Signal: '+title,title+'\n\n'+body+'\n\nTime (IST): '+new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}));
 }
 
