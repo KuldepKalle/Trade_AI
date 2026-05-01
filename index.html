@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>XAU ---- | BTC ---- | VWAP+EMA9</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
@@ -289,7 +289,7 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
           <span class="stitle" style="margin:0;border:none;padding:0">CANDLE VOLUME · 30M</span>
           <span id="xau-vol-info" style="font-family:var(--mono);font-size:8px;color:var(--t3)">Loading...</span>
         </div>
-        <div class="volwrap" id="xau-vol"></div>
+        <div class="volwrap" id="xau-vol" style="overflow-x:auto;scroll-behavior:auto"></div>
         <div class="g4" style="margin-top:8px">
           <div class="mc"><div class="lbl">Current</div><div class="val sm gold" id="xau-vc">---</div></div>
           <div class="mc"><div class="lbl">Avg 10</div><div class="val sm" id="xau-va">---</div></div>
@@ -399,7 +399,7 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
           <span class="stitle" style="margin:0;border:none;padding:0">CANDLE VOLUME · 30M</span>
           <span id="btc-vol-info" style="font-family:var(--mono);font-size:8px;color:var(--t3)">Loading...</span>
         </div>
-        <div class="volwrap" id="btc-vol"></div>
+        <div class="volwrap" id="btc-vol" style="overflow-x:auto;scroll-behavior:auto"></div>
         <div class="g4" style="margin-top:8px">
           <div class="mc"><div class="lbl">Current</div><div class="val sm blue" id="btc-vc">---</div></div>
           <div class="mc"><div class="lbl">Avg 10</div><div class="val sm" id="btc-va">---</div></div>
@@ -694,6 +694,13 @@ function sw(name,el){
   if(name==='news')renderNews();
   if(name==='sigs')renderAllSigs();
   if(name==='notif')loadNotifSettings();
+  // Scroll volume bars to show current candle when switching tabs
+  setTimeout(function(){
+    ['xau-vol','btc-vol'].forEach(function(id){
+      var el=document.getElementById(id);
+      if(el)el.scrollLeft=el.scrollWidth;
+    });
+  },100);
 }
 
 // ═══ THEME & SOUND ═══════════════════════════════
@@ -799,73 +806,8 @@ function detect15MPattern(candles){
 }
 
 // ═══ CORE ANALYSIS ═══════════════════════════════
-function analyseVWAPEMA(sym,c4H,c1H,c15M,price,dailyOpen){
-  if(!price||price<10)return null;
-  var isClosed=(sym==='xau')&&goldClosed;
-  var closes4H=c4H.map(function(c){return c.close;});
-  var closes1H=c1H.map(function(c){return c.close;});
-  var vwap4H=calcVWAP(c4H),ema9_4H=calcEMA9(closes4H);
-  var vwap1H=calcVWAP(c1H),ema9_1H=calcEMA9(closes1H);
-  var slope4H=ema9Slope(closes4H),slope1H=ema9Slope(closes1H);
-  var conf15=detect15MPattern(c15M);
+// analyseVWAPEMA v2 below
 
-  // Bias per TF
-  function tfBias(p,vwap,ema9,slope){
-    var pts=0;
-    if(!vwap||!ema9)return{bias:'neutral',pts:0};
-    if(p>vwap)pts++;else pts--;
-    if(p>ema9)pts++;else pts--;
-    if(ema9>vwap)pts++;else pts--;
-    if(slope>0)pts++;else pts--;
-    return{bias:pts>=2?'bull':pts<=-2?'bear':'neutral',pts:pts,vwap:vwap,ema9:ema9,slope:slope};
-  }
-  var b4H=tfBias(price,vwap4H,ema9_4H,slope4H);
-  var b1H=tfBias(price,vwap1H,ema9_1H,slope1H);
-
-  // Direction
-  var dir4H=b4H.bias,dir1H=b1H.bias;
-  var bullAgree=dir4H==='bull'&&dir1H==='bull';
-  var bearAgree=dir4H==='bear'&&dir1H==='bear';
-  var dir=bullAgree?'bull':bearAgree?'bear':'neutral';
-
-  // Score
-  var score=0,reasons=[];
-  if(bullAgree){score+=3;reasons.push('4H+1H VWAP Aligned ▲');}
-  else if(bearAgree){score+=3;reasons.push('4H+1H VWAP Aligned ▼');}
-  else if(dir4H!=='neutral'&&dir4H===dir1H){score+=2;reasons.push('TF Partial Align');}
-  else{score+=1;}
-
-  // EMA9 position
-  if(vwap4H&&ema9_4H){
-    if(dir==='bull'&&price>ema9_4H&&ema9_4H>vwap4H){score+=2;reasons.push('Price>EMA9>VWAP 4H');}
-    else if(dir==='bear'&&price<ema9_4H&&ema9_4H<vwap4H){score+=2;reasons.push('Price<EMA9<VWAP 4H');}
-    else if(dir!=='neutral'){score+=1;reasons.push('EMA9/VWAP partial 4H');}
-  }
-  if(vwap1H&&ema9_1H){
-    if(dir==='bull'&&price>ema9_1H&&ema9_1H>vwap1H){score+=1;reasons.push('Price>EMA9>VWAP 1H');}
-    else if(dir==='bear'&&price<ema9_1H&&ema9_1H<vwap1H){score+=1;reasons.push('Price<EMA9<VWAP 1H');}
-  }
-  // EMA9 slope
-  if((dir==='bull'&&slope4H>0&&slope1H>0)||(dir==='bear'&&slope4H<0&&slope1H<0)){score+=1;reasons.push('EMA9 Slopes Aligned');}
-
-  // 15M entry
-  if(conf15.cross&&((dir==='bull'&&conf15.crossBull)||(dir==='bear'&&conf15.crossBear))){score+=2;reasons.push('15M EMA9 Cross ★');}
-  else if(conf15.confirmed&&((dir==='bull'&&conf15.bull)||(dir==='bear'&&!conf15.bull))){score+=1;reasons.push('15M '+conf15.pattern);}
-
-  // Session bonus for XAU
-  if(sym==='xau'&&!isClosed){
-    var ist2=getIST(),m2=ist2.getUTCHours()*60+ist2.getUTCMinutes(),kz=getKZ(m2);
-    if(kz==='LONDON_KZ'||kz==='NY_KZ'||kz==='SILVER_BULLET'){score+=1;reasons.push(kz.replace(/_/g,' '));}
-    if(kz==='DEAD_ZONE')dir='neutral';
-  }
-
-  // News risk
-  var hn=newsEvs.some(function(e){if(e.impact!=='High')return false;try{return Math.abs(((e._istDate||new Date())-new Date())/60000)<30;}catch(x){return false;}});
-  if(!hn){score+=1;reasons.push('No News Risk');}else{reasons.push('⚠ News <30m');score=Math.max(0,score-1);}
-
-  var grade=score>=8?'A+':score>=5?'A':'B'; // 5+ qualifies for A in prime sessions
-  return{dir:dir,score:score,grade:grade,reasons:reasons,b4H:b4H,b1H:b1H,conf15:conf15,vwap4H:vwap4H,ema9_4H:ema9_4H,vwap1H:vwap1H,ema9_1H:ema9_1H,isClosed:isClosed};
-}
 
 // ═══ UPDATE ANALYSIS PANELS ══════════════════════
 function updatePanel(sym,res,price){
@@ -1058,9 +1000,10 @@ function renderVol(sym,candles){
   set(sym+'-vol-info','Binance · 30M · '+candles.length+' bars');
   // Scroll to show latest candle
   var volEl=gel(sym+'-vol');
-  if(volEl)setTimeout(function(){volEl.scrollLeft=volEl.scrollWidth;},50);
-  // Also scroll after 200ms in case of layout reflow
-  if(volEl)setTimeout(function(){volEl.scrollLeft=volEl.scrollWidth;},200);
+  // Force scroll to latest candle — immediate + delayed for layout
+  function scrollToLatest(){var el=document.getElementById(sym+'-vol');if(el){el.scrollLeft=99999;}}
+  scrollToLatest();
+  setTimeout(scrollToLatest,50);setTimeout(scrollToLatest,200);setTimeout(scrollToLatest,500);
 }
 
 // ═══ RUN ANALYSIS (called every second) ══════════
@@ -1125,26 +1068,40 @@ function checkSignal(sym,res,price){
   var sl=res.dir==='bull'?parseFloat(fmt(price-slDist)):parseFloat(fmt(price+slDist));
   var tp1=res.dir==='bull'?parseFloat(fmt(price+slDist*2)):parseFloat(fmt(price-slDist*2));
   var tp2=res.dir==='bull'?parseFloat(fmt(price+slDist*3.5)):parseFloat(fmt(price-slDist*3.5));
-  var slPips=isBTC?Math.round(slDist):Math.round(slDist*100);
-  var tp1Pips=isBTC?Math.round(slDist*2):Math.round(slDist*2*100);
+  // Gold: 1 pip = $0.10 so $1 SL = 10 pips. BTC: pips = dollars.
+  var slPips=isBTC?Math.round(slDist):Math.round(slDist*10);
+  var tp1Pips=isBTC?Math.round(slDist*2):Math.round(slDist*2*10);
   if(slPips<(isBTC?50:30)||tp1Pips<(isBTC?100:60))return;
 
   var ist2=getIST(),ts=String(ist2.getUTCHours()).padStart(2,'0')+':'+String(ist2.getUTCMinutes()).padStart(2,'0')+':'+String(ist2.getUTCSeconds()).padStart(2,'0')+' IST';
   var kz=!isBTC?getKZ(ist2.getUTCHours()*60+ist2.getUTCMinutes()):'24/7';
+  // Build SL/TP explanation
+  var slLogic=dir==='bull'?
+    'SL at '+fmt(sl,2)+' — below 1H VWAP ('+fmt(res.vwap1H||0,2)+'), structure invalidated if price returns below VWAP+EMA9':
+    'SL at '+fmt(sl,2)+' — above 1H VWAP ('+fmt(res.vwap1H||0,2)+'), structure invalidated if price returns above VWAP+EMA9';
+  var tp1Logic='TP1 at '+fmt(tp1,2)+' — 1:2 R:R (SL='+slPips+(isBTC?'$':'p')+', TP1='+tp1Pips+(isBTC?'$':'p')+')';
+  var tp2Logic='TP2 at '+fmt(tp2,2)+' — 1:3.5 R:R (extended target on momentum continuation)';
   var sig={
     id:now,key:key,date:today,time:ts,sym:sym.toUpperCase(),
     dir:res.dir==='bull'?'BUY':'SELL',quality:res.grade,score:res.score,
     entry:parseFloat(fmt(price)),sl:sl,tp1:tp1,tp2:tp2,slPips:slPips,tp1Pips:tp1Pips,
     rr:parseFloat((tp1Pips/slPips).toFixed(1)),
     vwap:parseFloat(fmt(res.vwap1H||0)),ema9:parseFloat(fmt(res.ema9_1H||0)),
-    session:kz.replace(/_/g,' '),outcome:'open',pnlPips:null,
+    session:kz.replace(/_/g,' '),outcome:'open',pnlPips:null,slLogic:slLogic,tp1Logic:tp1Logic,tp2Logic:tp2Logic,
     reasons:res.reasons.slice(0,4)
   };
   if(isBTC){btcSigs.push(sig);saveSigs('btc');}else{xauSigs.push(sig);saveSigs('xau');}
   renderSigs(sym);renderJnl();renderAllSigs();
   lastSignalTime=Date.now();
   var bull=res.dir==='bull';
-  showAlert(sym,res.grade==='A+'?'ap':(bull?'buy':'sell'),res.grade+' '+sig.dir+' '+sym.toUpperCase()+' @ '+fmt(sig.entry),res.reasons.slice(0,3).join(' · ')+' · SL: '+slPips+(isBTC?'$':'p')+' · R:R 1:'+sig.rr);
+  var slReason=dir==='bull'?
+    'SL '+fmt(sl)+' = below 1H VWAP ('+fmt(res.vwap1H||0)+') — invalid if price returns below VWAP+EMA9':
+    'SL '+fmt(sl)+' = above 1H VWAP ('+fmt(res.vwap1H||0)+') — invalid if price returns above VWAP+EMA9';
+  var tp1Reason='TP1 '+fmt(tp1)+' = 2x SL distance ('+tp1Pips+(isBTC?'$':'p')+')';
+  var tp2Reason='TP2 '+fmt(tp2)+' = 3.5x SL distance (momentum target)';
+  var alertBody=res.reasons.slice(0,3).join(' | ')+'\n'+slReason+'\n'+tp1Reason+'\n'+tp2Reason;
+  showAlert(sym,res.grade==='A+'?'ap':(bull?'buy':'sell'),
+    res.grade+' '+sig.dir+' '+sym.toUpperCase()+' @ '+fmt(sig.entry),alertBody);
 }
 
 
@@ -1674,124 +1631,124 @@ function crossedBelow(prevCandle,currCandle,vwap,ema9){
 function analyseVWAPEMA(sym,c4H,c1H,c15M,price,dailyOpen){
   if(!price||price<10)return null;
   var isClosed=(sym==='xau')&&goldClosed;
+  if(!c4H||c4H.length<4||!c1H||c1H.length<4)return null;
 
-  // Need at least 3 candles to check previous vs current
-  if(!c4H||c4H.length<3||!c1H||c1H.length<3)return null;
-
-  var closes4H=c4H.map(function(c){return c.close;});
-  var closes1H=c1H.map(function(c){return c.close;});
-
-  // VWAP: anchored to today's candles
+  var closes4H=c4H.map(function(k){return k.close;});
+  var closes1H=c1H.map(function(k){return k.close;});
   var vwap4H=calcVWAP(c4H),ema9_4H=calcEMA9(closes4H);
   var vwap1H=calcVWAP(c1H),ema9_1H=calcEMA9(closes1H);
   var slope4H=ema9Slope(closes4H),slope1H=ema9Slope(closes1H);
 
-  // Previous CLOSED candles (not the current forming one)
-  var n4=c4H.length,n1=c1H.length;
-  var prev4H=c4H[n4-2],curr4H=c4H[n4-1]; // curr4H may still be forming
-  var prev1H=c1H[n1-2],curr1H=c1H[n1-1];
-  // The "confirmed" candle is the one before the current forming candle
-  var confirmed4H=c4H[n4-2]; // last CLOSED 4H candle
-  var confirmed1H=c1H[n1-2]; // last CLOSED 1H candle
-  var prevPrev4H=c4H[n4-3];  // candle before that (to detect cross)
-  var prevPrev1H=c1H[n1-3];
+  if(!vwap1H||!ema9_1H||!vwap4H||!ema9_4H)return null;
 
-  // 15M for entry timing
-  var conf15=detect15MPattern(c15M);
+  // Last two CLOSED 1H candles (exclude forming current)
+  var n1=c1H.length;
+  var curr1H=c1H[n1-2];  // last fully closed 1H candle
+  var prev1H=c1H[n1-3];  // candle before that
 
-  // ── BUY conditions ──────────────────────────────────────────
-  // 1. Last CLOSED 4H candle is GREEN and closed ABOVE both VWAP+EMA9
-  var bull4H_closed=candleClosedAboveBoth(confirmed4H,vwap4H,ema9_4H);
-  // 2. Last CLOSED 1H candle is GREEN and closed ABOVE both VWAP+EMA9
-  var bull1H_closed=candleClosedAboveBoth(confirmed1H,vwap1H,ema9_1H);
-  // 3. 4H crossover: previous candle was NOT above, now it is
-  var cross4H_bull=crossedAbove(prevPrev4H,confirmed4H,vwap4H,ema9_4H);
-  // 4. 1H crossover: previous candle was NOT above, now it is
-  var cross1H_bull=crossedAbove(prevPrev1H,confirmed1H,vwap1H,ema9_1H);
-  // Also consider: 4H+1H both already above (continuation after cross)
-  var cont4H_bull=confirmed4H&&confirmed4H.close>vwap4H&&confirmed4H.close>ema9_4H&&confirmed4H.close>confirmed4H.open;
-  var cont1H_bull=confirmed1H&&confirmed1H.close>vwap1H&&confirmed1H.close>ema9_1H&&confirmed1H.close>confirmed1H.open;
+  // Last fully closed 4H candle
+  var n4=c4H.length;
+  var curr4H=c4H[n4-2];  // last fully closed 4H candle
+  var prev4H=c4H[n4-3];
 
-  // ── SELL conditions ─────────────────────────────────────────
-  var bear4H_closed=candleClosedBelowBoth(confirmed4H,vwap4H,ema9_4H);
-  var bear1H_closed=candleClosedBelowBoth(confirmed1H,vwap1H,ema9_1H);
-  var cross4H_bear=crossedBelow(prevPrev4H,confirmed4H,vwap4H,ema9_4H);
-  var cross1H_bear=crossedBelow(prevPrev1H,confirmed1H,vwap1H,ema9_1H);
-  var cont4H_bear=confirmed4H&&confirmed4H.close<vwap4H&&confirmed4H.close<ema9_4H&&confirmed4H.close<confirmed4H.open;
-  var cont1H_bear=confirmed1H&&confirmed1H.close<vwap1H&&confirmed1H.close<ema9_1H&&confirmed1H.close<confirmed1H.open;
+  if(!curr1H||!prev1H||!curr4H)return null;
 
-  // ── Determine direction ──────────────────────────────────────
-  var bullSetup=bull4H_closed&&bull1H_closed;
-  var bearSetup=bear4H_closed&&bear1H_closed;
-  var dir=bullSetup?'bull':bearSetup?'bear':'neutral';
+  // ── VWAP / EMA9 levels at the time of candle close ──────────────
+  // We use current VWAP/EMA9 as proxy (anchored same session)
+  var v1=vwap1H, e1=ema9_1H;
+  var v4=vwap4H, e4=ema9_4H;
 
-  // ── Score ────────────────────────────────────────────────────
+  // ── 1H candle conditions ─────────────────────────────────────────
+  // BUY trigger: closed GREEN above BOTH VWAP and EMA9
+  var c1H_bull = curr1H.close > curr1H.open &&   // green candle
+                 curr1H.close > v1 &&              // closed above 1H VWAP
+                 curr1H.close > e1;                // closed above 1H EMA9
+  // Cross from below: previous 1H candle was BELOW VWAP or EMA9
+  var c1H_cross_up = c1H_bull &&
+                     (prev1H.close < v1 || prev1H.close < e1);
+  // Continuation: already above (not first cross but still valid)
+  var c1H_cont_bull = c1H_bull && prev1H.close > v1 && prev1H.close > e1;
+
+  // SELL trigger: closed RED below BOTH VWAP and EMA9
+  var c1H_bear = curr1H.close < curr1H.open &&   // red candle
+                 curr1H.close < v1 &&              // closed below 1H VWAP
+                 curr1H.close < e1;                // closed below 1H EMA9
+  var c1H_cross_dn = c1H_bear &&
+                     (prev1H.close > v1 || prev1H.close > e1);
+  var c1H_cont_bear = c1H_bear && prev1H.close < v1 && prev1H.close < e1;
+
+  // ── 4H candle confirmation ───────────────────────────────────────
+  // For BUY: previous closed 4H must be GREEN (shows bullish structure)
+  var c4H_bull = curr4H.close > curr4H.open;
+  // For SELL: previous closed 4H must be RED
+  var c4H_bear = curr4H.close < curr4H.open;
+
+  // ── Direction ───────────────────────────────────────────────────
+  var bullSetup = c1H_bull && c4H_bull;  // 1H green above VWAP+EMA9 + 4H green
+  var bearSetup = c1H_bear && c4H_bear;  // 1H red below VWAP+EMA9 + 4H red
+  var dir = bullSetup?'bull':bearSetup?'bear':'neutral';
+
+  // ── Score ────────────────────────────────────────────────────────
   var score=0,reasons=[];
-
   if(dir==='bull'){
-    // Core: both TF closed green above VWAP+EMA9
-    score+=3;reasons.push('4H Green Close>VWAP+EMA9');
-    score+=3;reasons.push('1H Green Close>VWAP+EMA9');
-    // Fresh crossover bonus
-    if(cross4H_bull&&cross1H_bull){score+=1;reasons.push('Fresh Cross Both TF ★');}
-    else if(cross4H_bull||cross1H_bull){score+=0;reasons.push('Fresh Cross '+(cross4H_bull?'4H':'1H'));}
-    // EMA9 slope rising
-    if(slope4H>0&&slope1H>0){score+=1;reasons.push('EMA9 Rising Both TF');}
-    else if(slope4H>0||slope1H>0){score+=0;}
+    score+=3; reasons.push('1H Green closed above VWAP+EMA9');
+    score+=2; reasons.push('4H Green candle confirms');
+    if(c1H_cross_up){score+=2;reasons.push('FIRST cross above VWAP+EMA9 ★');}
+    else if(c1H_cont_bull){score+=0;reasons.push('Continuation above');}
+    if(slope1H>0){score+=1;reasons.push('EMA9 rising 1H');}
+    if(slope4H>0){score+=1;reasons.push('EMA9 rising 4H');}
   } else if(dir==='bear'){
-    score+=3;reasons.push('4H Red Close<VWAP+EMA9');
-    score+=3;reasons.push('1H Red Close<VWAP+EMA9');
-    if(cross4H_bear&&cross1H_bear){score+=1;reasons.push('Fresh Cross Both TF ★');}
-    else if(cross4H_bear||cross1H_bear){score+=0;reasons.push('Fresh Cross '+(cross4H_bear?'4H':'1H'));}
-    if(slope4H<0&&slope1H<0){score+=1;reasons.push('EMA9 Falling Both TF');}
+    score+=3; reasons.push('1H Red closed below VWAP+EMA9');
+    score+=2; reasons.push('4H Red candle confirms');
+    if(c1H_cross_dn){score+=2;reasons.push('FIRST cross below VWAP+EMA9 ★');}
+    else if(c1H_cont_bear){score+=0;reasons.push('Continuation below');}
+    if(slope1H<0){score+=1;reasons.push('EMA9 falling 1H');}
+    if(slope4H<0){score+=1;reasons.push('EMA9 falling 4H');}
   } else {
-    // Partial signal: only one TF confirmed
-    if(cont4H_bull&&cont1H_bull){dir='bull';score+=2;reasons.push('4H+1H Above VWAP+EMA9 (cont)');}
-    else if(cont4H_bear&&cont1H_bear){dir='bear';score+=2;reasons.push('4H+1H Below VWAP+EMA9 (cont)');}
+    // Show partial state
+    var pr=[];
+    if(c1H_bull)pr.push('1H green above VWAP+EMA9');
+    else if(c1H_bear)pr.push('1H red below VWAP+EMA9');
+    else pr.push('1H candle not confirmed ('+( curr1H.close>curr1H.open?'green but below':'red but above')+' VWAP/EMA9)');
+    if(!c4H_bull&&!c4H_bear)pr.push('4H neutral');
+    return{dir:'neutral',score:0,grade:'B',reasons:pr,
+      b4H:{bias:'neutral',slope:slope4H},b1H:{bias:'neutral',slope:slope1H},
+      conf15:detect15MPattern(c15M),vwap4H:vwap4H,ema9_4H:ema9_4H,
+      vwap1H:vwap1H,ema9_1H:ema9_1H,isClosed:isClosed,sr:null,atSR:false,
+      confirmed4H:curr4H,confirmed1H:curr1H};
   }
 
-  if(dir==='neutral'){
-    return{dir:'neutral',score:0,grade:'B',reasons:['No aligned candle close above/below VWAP+EMA9'],b4H:{bias:'neutral'},b1H:{bias:'neutral'},conf15:conf15,vwap4H:vwap4H,ema9_4H:ema9_4H,vwap1H:vwap1H,ema9_1H:ema9_1H,isClosed:isClosed,sr:null};
-  }
-
-  // ── S/R check for A+ upgrade ────────────────────────────────
+  // ── S/R check for A+ upgrade ─────────────────────────────────────
   var sr=detectSRLevels(c1H);
   var atSR=false;
-  if(dir==='bull'&&sr.nearSupport){
-    score+=2;reasons.push('At Support '+sr.nearSupportLevel.toFixed(2)+' ★');atSR=true;
-  } else if(dir==='bear'&&sr.nearResistance){
-    score+=2;reasons.push('At Resistance '+sr.nearResistanceLevel.toFixed(2)+' ★');atSR=true;
+  if(dir==='bull'&&sr.nearSupport){score+=2;reasons.push('At Support '+sr.nearSupportLevel.toFixed(2)+' ★');atSR=true;}
+  else if(dir==='bear'&&sr.nearResistance){score+=2;reasons.push('At Resistance '+sr.nearResistanceLevel.toFixed(2)+' ★');atSR=true;}
+
+  // ── 15M entry detail (informational, not a gate) ─────────────────
+  var conf15=detect15MPattern(c15M);
+  if(conf15.confirmed&&((dir==='bull'&&conf15.bull)||(dir==='bear'&&!conf15.bull))){
+    score+=1;reasons.push('15M entry: '+conf15.pattern);
   }
 
-  // ── 15M entry confirmation ───────────────────────────────────
-  if(conf15.cross&&((dir==='bull'&&conf15.crossBull)||(dir==='bear'&&conf15.crossBear))){
-    score+=1;reasons.push('15M EMA9 Cross ★');
-  } else if(conf15.confirmed&&((dir==='bull'&&conf15.bull)||(dir==='bear'&&!conf15.bull))){
-    score+=1;reasons.push('15M '+conf15.pattern);
-  }
-
-  // ── Session bonus XAU ────────────────────────────────────────
+  // ── Session bonus XAU ────────────────────────────────────────────
   if(sym==='xau'&&!isClosed){
-    var ist2=getIST(),m2=ist2.getUTCHours()*60+ist2.getUTCMinutes(),kz=getKZ(m2);
-    if(kz==='LONDON_KZ'||kz==='NY_KZ'||kz==='SILVER_BULLET'){score+=1;reasons.push(kz.replace(/_/g,' '));}
-    if(kz==='DEAD_ZONE')dir='neutral';
+    var ist2=getIST(),m2=ist2.getUTCHours()*60+ist2.getUTCMinutes(),kz2=getKZ(m2);
+    if(kz2==='LONDON_KZ'||kz2==='NY_KZ'||kz2==='SILVER_BULLET'){score+=1;reasons.push(kz2.replace(/_/g,' '));}
+    if(kz2==='DEAD_ZONE')return null;
   }
 
-  // ── News risk ────────────────────────────────────────────────
-  var hn=newsEvs.some(function(e){if(e.impact!=='High')return false;try{return Math.abs(((e._istDate||new Date())-new Date())/60000)<30;}catch(x){return false;}});
-  if(!hn){score+=1;reasons.push('No News Risk');}
+  // ── News risk ────────────────────────────────────────────────────
+  var hn=newsEvs.some(function(e){if(e.impact!=='High')return false;
+    try{return Math.abs(((e._istDate||new Date())-new Date())/60000)<30;}catch(x){return false;}});
+  if(!hn){score+=1;reasons.push('No news risk');}
   else{reasons.push('News <30m');score=Math.max(0,score-1);}
 
-  var grade=score>=8?'A+':score>=6?'A':'B';
-
-  return{
-    dir:dir,score:score,grade:grade,reasons:reasons,
-    b4H:{bias:dir,vwap:vwap4H,ema9:ema9_4H,slope:slope4H,closedAbove:bull4H_closed,closedBelow:bear4H_closed,cross:cross4H_bull||cross4H_bear},
-    b1H:{bias:dir,vwap:vwap1H,ema9:ema9_1H,slope:slope1H,closedAbove:bull1H_closed,closedBelow:bear1H_closed,cross:cross1H_bull||cross1H_bear},
+  var grade=score>=8?'A+':score>=5?'A':'B';
+  return{dir:dir,score:score,grade:grade,reasons:reasons,
+    b4H:{bias:dir,slope:slope4H,vwap:vwap4H,ema9:ema9_4H,green:c4H_bull,red:c4H_bear},
+    b1H:{bias:dir,slope:slope1H,vwap:vwap1H,ema9:ema9_1H,cross_up:c1H_cross_up,cross_dn:c1H_cross_dn,green:c1H_bull,red:c1H_bear},
     conf15:conf15,vwap4H:vwap4H,ema9_4H:ema9_4H,vwap1H:vwap1H,ema9_1H:ema9_1H,
-    isClosed:isClosed,sr:sr,atSR:atSR,
-    confirmed4H:confirmed4H,confirmed1H:confirmed1H
-  };
+    isClosed:isClosed,sr:sr,atSR:atSR,confirmed4H:curr4H,confirmed1H:curr1H};
 }
 
 // === UPDATE PANELS v2 ===
@@ -1820,17 +1777,25 @@ function updatePanel(sym,res,price){
     b4.closedAbove?'Closed ABOVE VWAP+EMA9':b4.closedBelow?'Closed BELOW VWAP+EMA9':'Not confirmed');
   setTag(pre+'4h-pema',b4.closedAbove?'tb':b4.closedBelow?'ts':'tw',
     b4.closedAbove?'GREEN candle':'RED candle');
-  setTag(pre+'4h-evwap',b4.cross?(bull?'tb':'ts'):'tw',
-    b4.cross?(bull?'Fresh Cross UP':'Fresh Cross DOWN'):(res.b4H.bias==='bull'?'Continuation':'Neutral'));
+  var c4Status=res.b4H&&res.confirmed4H?
+    (res.b4H.green?'4H GREEN candle (bull structure)':res.b4H.red?'4H RED candle (bear structure)':'4H Doji'):
+    (b4.cross?(bull?'Fresh Cross UP':'Fresh Cross DOWN'):'Neutral');
+  setTag(pre+'4h-evwap',res.b4H&&res.b4H.green?'tb':res.b4H&&res.b4H.red?'ts':'tw',c4Status);
   setTag(pre+'4h-bias',res.dir==='bull'?'tb':res.dir==='bear'?'ts':'tw',
-    res.dir==='bull'?'BULLISH':res.dir==='bear'?'BEARISH':'NEUTRAL');
+    res.dir==='bull'?'BULLISH ▲':res.dir==='bear'?'BEARISH ▼':'NEUTRAL');
+  // Show 4H candle color
+  if(res.b4H&&res.confirmed4H){
+    var c4color=res.b4H.green?'GREEN ▲ (bull confirms)':res.b4H.red?'RED ▼ (bear confirms)':'DOJI (no confirm)';
+    set(pre+'4h-evwap',c4color);
+  }
 
   // 1H panel
   set(pre+'v1h',res.vwap1H?res.vwap1H.toFixed(2):'---');
   set(pre+'e1h',res.ema9_1H?res.ema9_1H.toFixed(2):'---');
   var b1=res.b1H;
   setTag(pre+'1h-pvwap',b1.closedAbove?'tb':b1.closedBelow?'ts':'tw',
-    b1.closedAbove?'Closed ABOVE VWAP+EMA9':b1.closedBelow?'Closed BELOW VWAP+EMA9':'Not confirmed');
+    b1.closedAbove?(b1.cross_up?'CROSSED ABOVE VWAP+EMA9 ★':'Closed Above VWAP+EMA9'):
+    b1.closedBelow?(b1.cross_dn?'CROSSED BELOW VWAP+EMA9 ★':'Closed Below VWAP+EMA9'):'Not confirmed');
   setTag(pre+'1h-pema',b1.closedAbove?'tb':b1.closedBelow?'ts':'tw',
     b1.closedAbove?'GREEN candle':'RED candle');
   setTag(pre+'1h-evwap',b1.cross?(bull?'tb':'ts'):'tw',
