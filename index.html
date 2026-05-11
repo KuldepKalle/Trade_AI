@@ -323,6 +323,13 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
         <div id="xau-sig-list"><div style="color:var(--t3);font-family:var(--mono);font-size:9px;padding:10px;text-align:center">No previous signals.</div></div>
       </div>
       <!-- News compact -->
+      <!-- S/R Strategy Panel -->
+      <div class="card" style="border-color:rgba(245,158,11,.25);margin-bottom:10px">
+        <div class="stitle" style="color:var(--amber)">S/R DEMAND &amp; SUPPLY — XAU</div>
+        <div class="rw"><span class="rl">Nearest Demand Zone</span><span class="rv" id="xau-snr-demand" style="color:var(--green)">---</span></div>
+        <div class="rw"><span class="rl">Nearest Supply Zone</span><span class="rv" id="xau-snr-supply" style="color:var(--red)">---</span></div>
+        <div id="xau-snr-status" style="font-family:var(--mono);font-size:9px;color:var(--t3);padding:7px 0">Scanning zones...</div>
+      </div>
       <div class="card">
         <div class="stitle">NEWS RISK · NEXT 4H</div>
         <div id="news-compact-xau"><div style="color:var(--t3);font-family:var(--mono);font-size:9px;padding:6px">Loading...</div></div>
@@ -430,6 +437,13 @@ body{background:var(--bg);color:var(--t1);font-family:var(--sans);min-height:100
           </div>
         </div>
         <div id="btc-sig-list"><div style="color:var(--t3);font-family:var(--mono);font-size:9px;padding:10px;text-align:center">No previous signals.</div></div>
+      </div>
+      <!-- S/R Strategy Panel BTC -->
+      <div class="card" style="border-color:rgba(245,158,11,.25);margin-bottom:10px">
+        <div class="stitle" style="color:var(--amber)">S/R DEMAND &amp; SUPPLY — BTC</div>
+        <div class="rw"><span class="rl">Nearest Demand Zone</span><span class="rv" id="btc-snr-demand" style="color:var(--green)">---</span></div>
+        <div class="rw"><span class="rl">Nearest Supply Zone</span><span class="rv" id="btc-snr-supply" style="color:var(--red)">---</span></div>
+        <div id="btc-snr-status" style="font-family:var(--mono);font-size:9px;color:var(--t3);padding:7px 0">Scanning zones...</div>
       </div>
       <div class="card">
         <div class="stitle blue">BTC 24/7 · NEWS RISK</div>
@@ -661,6 +675,37 @@ var BTC={price:0,high:0,low:0,dailyOpen:0};
 var goldClosed=false;
 var xauC30M=[],xauC1H=[],xauC4H=[];
 var btcC30M=[],btcC1H=[],btcC4H=[];
+// === CROSS-DEVICE SYNC ===
+var syncChannel=null;
+try{syncChannel=new BroadcastChannel('vwap_gold_sync');}catch(e){}
+
+function mergeSigs(existing,incoming){
+  var merged=existing.slice();
+  incoming.forEach(function(sig){
+    var idx=merged.findIndex(function(e){return e.id===sig.id;});
+    if(idx<0)merged.push(sig); // new signal
+    else if(sig.outcome!=='open'&&merged[idx].outcome==='open')merged[idx]=sig; // update outcome
+  });
+  return merged.sort(function(a,b){return(b.id||0)-(a.id||0);});
+}
+// Poll localStorage every 10s to catch updates from other devices
+function pollSigsFromStorage(){
+  ['xau','btc'].forEach(function(sym){
+    try{
+      var raw=localStorage.getItem('ve_'+sym);
+      if(!raw)return;
+      var incoming=JSON.parse(raw);
+      var current=sym==='btc'?btcSigs:xauSigs;
+      var merged=mergeSigs(current,incoming);
+      var changed=merged.length!==current.length||merged.some(function(m,i){return !current[i]||m.outcome!==current[i].outcome;});
+      if(changed){
+        if(sym==='btc')btcSigs=merged; else xauSigs=merged;
+        renderSigs(sym);renderAllSigs();renderJnl();
+      }
+    }catch(e){}
+  });
+}
+
 var xauSigs=[],btcSigs=[];
 var newsEvs=[],newsFilter='ALL',newsLoaded='';
 var xauLastCheck=0,xauLastBuy=0,xauLastSell=0;
@@ -1020,6 +1065,10 @@ function runAnalysis(sym){
   if(!res)return;
   updatePanel(sym,res,price);
   checkSignal(sym,res,price);
+  // Strategy 2: S/R Demand/Supply
+  var snrRes=analyseSNR(sym,c4H,c1H,price);
+  if(snrRes)checkSNRSignal(sym,snrRes,price);
+  updateSNRPanel(sym,snrRes,price);
 }
 
 // ═══ SIGNAL ENGINE ═══════════════════════════════
@@ -1067,11 +1116,11 @@ function checkSignal(sym,res,price){
   if(isBTC)slDist=Math.max(slDist,price*0.008); // min 0.8% for BTC
   else slDist=Math.max(slDist,0.40); // min 40 pips for gold
   var sl=res.dir==='bull'?parseFloat(fmt(price-slDist)):parseFloat(fmt(price+slDist));
-  var tp1=res.dir==='bull'?parseFloat(fmt(price+slDist*2)):parseFloat(fmt(price-slDist*2));
-  var tp2=res.dir==='bull'?parseFloat(fmt(price+slDist*3.5)):parseFloat(fmt(price-slDist*3.5));
+  var tp1=res.dir==='bull'?parseFloat(fmt(price+slDist*3)):parseFloat(fmt(price-slDist*3));
+  var tp2=res.dir==='bull'?parseFloat(fmt(price+slDist*5)):parseFloat(fmt(price-slDist*5));
   // Gold: 1 pip = $0.10 so $1 SL = 10 pips. BTC: pips = dollars.
   var slPips=isBTC?Math.round(slDist):Math.round(slDist*10);
-  var tp1Pips=isBTC?Math.round(slDist*2):Math.round(slDist*2*10);
+  var tp1Pips=isBTC?Math.round(slDist*3):Math.round(slDist*3*10);
   if(slPips<(isBTC?50:30)||tp1Pips<(isBTC?100:60))return;
 
   var ist2=getIST(),ts=String(ist2.getUTCHours()).padStart(2,'0')+':'+String(ist2.getUTCMinutes()).padStart(2,'0')+':'+String(ist2.getUTCSeconds()).padStart(2,'0')+' IST';
@@ -1099,8 +1148,8 @@ function checkSignal(sym,res,price){
   var slReason=res.dir==='bull'?
     'SL '+fmt(sl)+' = below 1H VWAP ('+fmt(res.vwap1H||0)+') — invalid if price closes below VWAP+EMA9':
     'SL '+fmt(sl)+' = above 1H VWAP ('+fmt(res.vwap1H||0)+') — invalid if price closes above VWAP+EMA9';
-  var tp1Reason='TP1 '+fmt(tp1)+' = 2x SL distance ('+tp1Pips+(isBTC?'$':'p')+')';
-  var tp2Reason='TP2 '+fmt(tp2)+' = 3.5x SL distance (momentum target)';
+  var tp1Reason='TP1 '+fmt(tp1)+' = 3x SL (1:3 R:R ('+tp1Pips+(isBTC?'$':'p')+')';
+  var tp2Reason='TP2 '+fmt(tp2)+' = 5x SL (extended (momentum target)';
   var alertBody=res.reasons.slice(0,3).join(' | ')+'\n'+slReason+'\n'+tp1Reason+'\n'+tp2Reason;
   showAlert(sym,res.grade==='A+'?'ap':(bull?'buy':'sell'),
     res.grade+' '+sig.dir+' '+sym.toUpperCase()+' @ '+fmt(sig.entry),alertBody);
@@ -1178,7 +1227,14 @@ function checkNoAlertStatus(){
 
 
 // ═══ SIGNAL STORAGE + RENDER ═════════════════════
-function saveSigs(sym){try{localStorage.setItem('ve_'+sym,JSON.stringify(sym==='btc'?btcSigs:xauSigs));}catch(e){}}
+function saveSigs(sym){
+  try{
+    var data=JSON.stringify(sym==='btc'?btcSigs:xauSigs);
+    localStorage.setItem('ve_'+sym,data);
+    // Broadcast to other tabs/windows on same device
+    if(syncChannel)syncChannel.postMessage({type:'SIGS_UPDATE',sym:sym,data:data,ts:Date.now()});
+  }catch(e){}
+}
 function loadSigs(){
   try{var x=localStorage.getItem('ve_xau');xauSigs=x?JSON.parse(x):[];}catch(e){xauSigs=[];}
   try{var b=localStorage.getItem('ve_btc');btcSigs=b?JSON.parse(b):[];}catch(e){btcSigs=[];}
@@ -1201,7 +1257,7 @@ function buildCard(sig,latest){
   var prog=open&&sig.tp1!==sig.entry?Math.min(100,Math.max(0,Math.round((bull?p-sig.entry:sig.entry-p)/(bull?sig.tp1-sig.entry:sig.entry-sig.tp1)*100))):0;
   var sym=sig.sym,isBTC=sym==='BTC';
   return'<div class="sc '+(sig.quality==='A+'?'ap':'ag')+(sig.outcome==='tp1'||sig.outcome==='tp2'?' tp':sig.outcome==='sl'?' sl':'')+'">'
-    +'<div class="sc-hdr"><span class="gb2 '+(sig.quality==='A+'?'ap':'ag')+'">'+sig.quality+' · '+sig.score+'/10</span>'
+    +'<div class="sc-hdr"><span class="gb2 '+(sig.quality==='A+'?'ap':'ag')+'">'+sig.quality+' · '+sig.score+'/10</span>'+stratBadge
     +(latest?'<span style="font-family:var(--mono);font-size:8px;color:var(--gold);padding:2px 7px;border-radius:2px;background:rgba(240,192,64,.1)">★ LATEST</span>':'')
     +'<span style="font-family:var(--mono);font-size:8px;color:var(--t3)"><strong style="color:var(--gold)">'+sig.date+'</strong> '+sig.time+'</span>'
     +'<span class="tag ti" style="margin-left:auto">'+sig.session+'</span></div>'
@@ -1515,6 +1571,277 @@ function showAlert(sym,type,title,body){
   sendEmail('VWAPgold Signal: '+title,title+'\n\n'+body+'\n\nTime (IST): '+new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}));
 }
 
+// ═══════════════════════════════════════════════════════════════
+// STRATEGY 2: SUPPORT & RESISTANCE / DEMAND & SUPPLY
+// Detect strong S/R zones from 1H+4H, fire on candle-close entry
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Detect strong S/R zones ──────────────────────────────────
+function detectDemandSupply(c4H, c1H) {
+  if (!c4H || c4H.length < 10 || !c1H || c1H.length < 10) return null;
+  var p = c1H[c1H.length - 1].close;
+  var zones = [];
+  var lookback = Math.min(40, c1H.length - 2);
+  var tol = p * 0.003; // 0.3% tolerance
+
+  // Scan 1H candles for strong zones
+  for (var i = 2; i < lookback; i++) {
+    var cn = c1H[c1H.length - 1 - i];
+    var cp = c1H[c1H.length - 2 - i];
+    var cn2 = c1H[c1H.length - 3 - i];
+    if (!cn || !cp || !cn2) continue;
+    var body = Math.abs(cn.close - cn.open);
+    var rng = cn.high - cn.low || 0.01;
+    var bodyPct = body / rng;
+
+    // Strong bearish (supply): large red candle after rally = heavy selling
+    if (cn.close < cn.open && bodyPct > 0.6 && body > rng * 0.6) {
+      var top = Math.max(cn.open, cn.close);
+      var bot = Math.min(cn.open, cn.close);
+      if (!zones.some(function(z) { return z.type === 'supply' && Math.abs(z.mid - (top + bot) / 2) < tol * 3; })) {
+        zones.push({ type: 'supply', top: top, bot: bot, mid: (top + bot) / 2, tf: '1H', strength: bodyPct, idx: i });
+      }
+    }
+    // Strong bullish (demand): large green candle after selloff = smart money entry
+    if (cn.close > cn.open && bodyPct > 0.6 && body > rng * 0.6) {
+      var top2 = Math.max(cn.open, cn.close);
+      var bot2 = Math.min(cn.open, cn.close);
+      if (!zones.some(function(z) { return z.type === 'demand' && Math.abs(z.mid - (top2 + bot2) / 2) < tol * 3; })) {
+        zones.push({ type: 'demand', top: top2, bot: bot2, mid: (top2 + bot2) / 2, tf: '1H', strength: bodyPct, idx: i });
+      }
+    }
+  }
+
+  // Also scan 4H for major zones
+  var lookback4 = Math.min(20, c4H.length - 2);
+  for (var j = 2; j < lookback4; j++) {
+    var c4 = c4H[c4H.length - 1 - j];
+    if (!c4) continue;
+    var b4 = Math.abs(c4.close - c4.open);
+    var r4 = c4.high - c4.low || 0.01;
+    var bp4 = b4 / r4;
+    if (bp4 > 0.65 && b4 > r4 * 0.65) {
+      var t4 = Math.max(c4.open, c4.close), bt4 = Math.min(c4.open, c4.close);
+      var type4 = c4.close < c4.open ? 'supply' : 'demand';
+      if (!zones.some(function(z) { return z.type === type4 && Math.abs(z.mid - (t4 + bt4) / 2) < tol * 4; })) {
+        zones.push({ type: type4, top: t4, bot: bt4, mid: (t4 + bt4) / 2, tf: '4H', strength: bp4 * 1.2, idx: j });
+      }
+    }
+  }
+
+  // Find zones price is approaching or retesting
+  var nearDemand = zones.filter(function(z) { return z.type === 'demand' && p >= z.bot - tol && p <= z.top + tol * 4; })
+    .sort(function(a, b) { return b.strength - a.strength; });
+  var nearSupply = zones.filter(function(z) { return z.type === 'supply' && p <= z.top + tol && p >= z.bot - tol * 4; })
+    .sort(function(a, b) { return b.strength - a.strength; });
+
+  return {
+    zones: zones,
+    nearDemand: nearDemand[0] || null,
+    nearSupply: nearSupply[0] || null,
+    allDemand: nearDemand,
+    allSupply: nearSupply
+  };
+}
+
+// ─── Candle entry conditions ───────────────────────────────────
+function checkSNREntry(c1H, ds) {
+  if (!c1H || c1H.length < 4 || !ds) return { dir: 'neutral', pattern: 'None', confirmed: false };
+  var n = c1H.length;
+  var curr = c1H[n - 2]; // last closed candle
+  var prev = c1H[n - 3]; // candle before
+  if (!curr || !prev) return { dir: 'neutral', pattern: 'None', confirmed: false };
+
+  var body = Math.abs(curr.close - curr.open);
+  var rng = curr.high - curr.low || 0.01;
+  var bodyPct = body / rng;
+  var isBull = curr.close > curr.open;
+  var isRed = curr.close < curr.open;
+  var upperWick = curr.high - Math.max(curr.close, curr.open);
+  var lowerWick = Math.min(curr.close, curr.open) - curr.low;
+
+  // BUY at demand: green candle closed at demand zone (rejection of lower prices)
+  // Smart money signature: green candle with body > 50% range after selloff
+  var buyAt = ds.nearDemand && isBull && bodyPct > 0.45;
+  // Extra: prev candle was red (the selloff into demand)
+  var prevWasSelloff = prev.close < prev.open;
+  var pinBarBuy = isBull && lowerWick > body * 1.5 && bodyPct < 0.4; // pin bar at demand
+
+  // SELL at supply: red candle closed at supply zone (rejection of higher prices)
+  var sellAt = ds.nearSupply && isRed && bodyPct > 0.45;
+  var prevWasBuy = prev.close > prev.open;
+  var pinBarSell = isRed && upperWick > body * 1.5 && bodyPct < 0.4; // pin bar at supply
+
+  if (buyAt || pinBarBuy) {
+    var pat = pinBarBuy ? 'Pin Bar (Demand)' : (prevWasSelloff ? 'Engulf after selloff' : 'Green at Demand');
+    return { dir: 'bull', pattern: pat, confirmed: buyAt || pinBarBuy, zone: ds.nearDemand, bodyPct: Math.round(bodyPct * 100) };
+  }
+  if (sellAt || pinBarSell) {
+    var pat2 = pinBarSell ? 'Pin Bar (Supply)' : (prevWasBuy ? 'Red after rally' : 'Red at Supply');
+    return { dir: 'bear', pattern: pat2, confirmed: sellAt || pinBarSell, zone: ds.nearSupply, bodyPct: Math.round(bodyPct * 100) };
+  }
+  return { dir: 'neutral', pattern: 'None', confirmed: false };
+}
+
+// ─── Main SNR analysis ─────────────────────────────────────────
+function analyseSNR(sym, c4H, c1H, price) {
+  if (!price || price < 10) return null;
+  if (!c4H || c4H.length < 5 || !c1H || c1H.length < 5) return null;
+  var isClosed = (sym === 'xau') && goldClosed;
+
+  var ds = detectDemandSupply(c4H, c1H);
+  if (!ds) return null;
+  var entry = checkSNREntry(c1H, ds);
+
+  var score = 0, reasons = [];
+  if (entry.dir === 'neutral') {
+    return {
+      dir: 'neutral', score: 0, grade: 'B', reasons: [],
+      ds: ds, entry: entry, isClosed: isClosed,
+      nearDemand: ds.nearDemand, nearSupply: ds.nearSupply
+    };
+  }
+
+  var bull = entry.dir === 'bull';
+  // Score: zone quality
+  if (entry.zone) {
+    score += entry.zone.tf === '4H' ? 3 : 2;
+    reasons.push((bull ? 'Demand' : 'Supply') + ' zone (' + entry.zone.tf + ') ' + entry.zone.mid.toFixed(2));
+  }
+  // Pattern quality
+  if (entry.pattern.includes('Engulf') || entry.pattern.includes('selloff') || entry.pattern.includes('rally')) {
+    score += 3; reasons.push(entry.pattern + ' ★');
+  } else if (entry.pattern.includes('Pin Bar')) {
+    score += 2; reasons.push(entry.pattern + ' ★');
+  } else {
+    score += 1; reasons.push(entry.pattern);
+  }
+  // Body strength
+  if (entry.bodyPct > 65) { score += 1; reasons.push('Strong body ' + entry.bodyPct + '%'); }
+
+  // 4H confirmation: 4H candle same direction
+  var c4last = c4H[c4H.length - 2];
+  if (c4last) {
+    var c4bull = c4last.close > c4last.open;
+    if ((bull && c4bull) || (!bull && !c4bull)) { score += 2; reasons.push('4H confirms ' + (bull ? 'GREEN' : 'RED')); }
+  }
+
+  // Session bonus XAU
+  if (sym === 'xau' && !isClosed) {
+    var ist2 = getIST(), m2 = ist2.getUTCHours() * 60 + ist2.getUTCMinutes();
+    var kz2 = getKZ(m2);
+    if (kz2 === 'LONDON_KZ' || kz2 === 'NY_KZ' || kz2 === 'SILVER_BULLET') { score += 1; reasons.push(kz2.replace(/_/g, ' ')); }
+    if (kz2 === 'DEAD_ZONE') return null;
+  }
+
+  // News risk
+  var hn = newsEvs.some(function(e) {
+    if (e.impact !== 'High') return false;
+    try { return Math.abs(((e._istDate || new Date()) - new Date()) / 60000) < 30; } catch (x) { return false; }
+  });
+  if (!hn) { score += 1; reasons.push('No news risk'); }
+  else { reasons.push('News <30m'); score = Math.max(0, score - 1); }
+
+  var grade = score >= 8 ? 'A+' : score >= 5 ? 'A' : 'B';
+  return {
+    dir: entry.dir, score: score, grade: grade, reasons: reasons,
+    ds: ds, entry: entry, isClosed: isClosed,
+    nearDemand: ds.nearDemand, nearSupply: ds.nearSupply
+  };
+}
+
+
+// ─── SNR Signal Engine ──────────────────────────────────────
+var snrLastCheck={xau:0,btc:0};
+var snrLastBuy={xau:0,btc:0};
+var snrLastSell={xau:0,btc:0};
+
+function checkSNRSignal(sym,res,price){
+  if(!res||!price)return;
+  if(res.dir==='neutral'||res.score<5)return;
+  var isBTC=sym==='btc';
+  if(!isBTC&&goldClosed)return;
+  var now=Date.now();
+  if(now-(snrLastCheck[sym]||0)<5000)return;
+  snrLastCheck[sym]=now;
+
+  var bull=res.dir==='bull';
+  if(bull&&(now-(snrLastBuy[sym]||0)<5400000))return;
+  if(!bull&&(now-(snrLastSell[sym]||0)<5400000))return;
+
+  var today=getISTStr();
+  var sigs=isBTC?btcSigs:xauSigs;
+  var dc=sigs.filter(function(s){return s.date===today&&s.dir===(bull?'BUY':'SELL')&&s.strategy==='SNR';}).length;
+  if(dc>=3)return;
+
+  var zp=isBTC?Math.round(price/100)*100:Math.round(price/5)*5;
+  var key=today+'_SNR_'+(bull?'B':'S')+'_'+zp;
+  if(sigs.some(function(s){return s.key===key;}))return;
+
+  if(bull)snrLastBuy[sym]=now; else snrLastSell[sym]=now;
+
+  var zone=res.entry.zone;
+  var sl=bull?parseFloat(fmt(zone?zone.bot*0.9997:price*0.995)):
+              parseFloat(fmt(zone?zone.top*1.0003:price*1.005));
+  var slDist=Math.abs(price-sl);
+  if(isBTC)slDist=Math.max(slDist,price*0.008);
+  else slDist=Math.max(slDist,0.30);
+  var tp1=parseFloat(fmt(bull?price+slDist*3:price-slDist*3));
+  var tp2=parseFloat(fmt(bull?price+slDist*5:price-slDist*5));
+  var slPips=isBTC?Math.round(slDist):Math.round(slDist*10);
+  var tp1Pips=Math.round(slPips*3);
+  if(slPips<20||tp1Pips<60)return;
+
+  var ist2=getIST();
+  var ts=String(ist2.getUTCHours()).padStart(2,'0')+':'+String(ist2.getUTCMinutes()).padStart(2,'0')+':'+String(ist2.getUTCSeconds()).padStart(2,'0')+' IST';
+  var kz=!isBTC?getKZ(ist2.getUTCHours()*60+ist2.getUTCMinutes()):'24/7';
+  var slReason=bull?
+    'SL '+fmt(sl)+' = below '+(zone?'demand zone bot '+fmt(zone.bot):'price -'+slPips+'p')+'  — demand invalidated if broken':
+    'SL '+fmt(sl)+' = above '+(zone?'supply zone top '+fmt(zone.top):'price +'+slPips+'p')+'  — supply invalidated if broken';
+  var sig={
+    id:now,key:key,date:today,time:ts,sym:sym.toUpperCase(),strategy:'SNR',
+    dir:bull?'BUY':'SELL',quality:res.grade,score:res.score,
+    entry:parseFloat(fmt(price)),sl:sl,tp1:tp1,tp2:tp2,slPips:slPips,tp1Pips:tp1Pips,
+    rr:3,vwap:0,ema9:0,session:kz.replace(/_/g,' '),outcome:'open',pnlPips:null,
+    reasons:res.reasons.slice(0,4),slLogic:slReason,
+    tp1Logic:'TP1 '+fmt(tp1)+' = 3x SL (1:3 R:R, '+tp1Pips+(isBTC?'$':'p')+')',
+    tp2Logic:'TP2 '+fmt(tp2)+' = 5x SL (continuation target)'
+  };
+  if(isBTC)btcSigs.push(sig); else xauSigs.push(sig);
+  saveSigs(sym);renderSigs(sym);renderAllSigs();renderJnl();
+  lastSignalTime=Date.now();
+  var alertBody=res.reasons.slice(0,3).join(' | ')+
+    '\nEntry: '+fmt(price)+' | SL: '+fmt(sl)+' ('+slPips+(isBTC?'$':'p')+')'+
+    '\nTP1: '+fmt(tp1)+' (+'+tp1Pips+(isBTC?'$':'p')+') | TP2: '+fmt(tp2)+
+    '\n'+slReason+'\nStrategy: S/R Demand & Supply';
+  showAlert(sym,res.grade==='A+'?'ap':(bull?'buy':'sell'),
+    '[S/R] '+res.grade+' '+sig.dir+' '+sym.toUpperCase()+' @ '+fmt(price),alertBody);
+}
+
+// ─── SNR Panel updater ─────────────────────────────────────
+function updateSNRPanel(sym,res,price){
+  var pre=sym+'-snr-';
+  if(!res){
+    set(pre+'status','Waiting for candle data...');return;
+  }
+  if(res.isClosed){set(pre+'status','Market closed');return;}
+  var nd=res.nearDemand,ns=res.nearSupply;
+  set(pre+'demand',nd?fmt(nd.bot)+' – '+fmt(nd.top)+' ('+nd.tf+' '+Math.round(nd.strength*100)+'%)':'No zone nearby');
+  set(pre+'supply',ns?fmt(ns.bot)+' – '+fmt(ns.top)+' ('+ns.tf+' '+Math.round(ns.strength*100)+'%)':'No zone nearby');
+  var e=res.entry;
+  var statusEl=document.getElementById(sym+'-snr-status');
+  if(statusEl){
+    if(e.dir!=='neutral'&&e.confirmed){
+      statusEl.textContent='SETUP: '+e.pattern+' at '+(e.dir==='bull'?'Demand':'Supply')+' zone — Score '+res.score+'/10';
+      statusEl.style.color=e.dir==='bull'?'var(--green)':'var(--red)';
+    } else {
+      statusEl.textContent='Monitoring. '+(nd?'Demand: '+fmt(nd.mid)+' ':'')+( ns?'Supply: '+fmt(ns.mid):'');
+      statusEl.style.color='var(--t3)';
+    }
+  }
+}
+
+
 async function requestWakeLock(){try{if('wakeLock' in navigator)await navigator.wakeLock.request('screen');}catch(e){}}
 function init(){
   applyTheme(localStorage.getItem('vet')==='l');
@@ -1533,8 +1860,11 @@ function init(){
   setInterval(renderNews,30000);
   setInterval(fetchNews,900000);
   setInterval(function(){renderSigs('xau');renderSigs('btc');},10000);
+  setInterval(pollSigsFromStorage,10000);
   setInterval(checkNoAlertStatus,300000);
   document.addEventListener('click',function(){try{new(window.AudioContext||window.webkitAudioContext)().resume();}catch(e){}},{once:true});
+  // Wire BroadcastChannel after init
+  if(syncChannel){syncChannel.onmessage=function(ev){if(!ev.data||ev.data.type!=='SIGS_UPDATE')return;var sym=ev.data.sym;try{var inc=JSON.parse(ev.data.data);var cur=sym==='btc'?btcSigs:xauSigs;var merged=mergeSigs(cur,inc);if(sym==='btc')btcSigs=merged;else xauSigs=merged;renderSigs(sym);renderAllSigs();renderJnl();}catch(e){};};}
 }
 init();
 
