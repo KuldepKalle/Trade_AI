@@ -152,6 +152,7 @@ input[type=range]{padding:0;accent-color:var(--gold);}
   <div class="logo">◈ VWAP·EMA9</div>
   <div class="ppill"><span class="sym">XAU</span><span class="prc gold" id="xp">----</span><span id="xc" style="font-size:9px">--</span></div>
   <div class="ppill" style="border-color:rgba(96,165,250,.3)"><span class="sym blue">BTC</span><span class="prc blue" id="bp">----</span><span id="bc" style="font-size:9px">--</span></div>
+  <div class="ppill" style="border-color:rgba(45,212,191,.3)"><span class="sym" style="color:var(--teal,#2dd4bf)">US100</span><span class="prc" style="color:var(--teal,#2dd4bf)" id="u100p">----</span><span id="u100c" style="font-size:9px">--</span></div>
   <div class="ldot" id="ldot"></div>
   <span id="feed-lbl">CONNECTING</span>
   <span id="clk">--:--:-- IST</span>
@@ -174,6 +175,7 @@ input[type=range]{padding:0;accent-color:var(--gold);}
 <div class="tabs">
   <button class="tab on" onclick="sw('xau',this)" id="tab-xau">◈ XAU/USD</button>
   <button class="tab" onclick="sw('btc',this)" id="tab-btc">₿ BITCOIN</button>
+  <button class="tab" onclick="sw('us100',this)" id="tab-us100">📈 US100</button>
   <button class="tab" onclick="sw('sigs',this)" id="tab-sigs">⚡ SIGNALS</button>
   <button class="tab" onclick="sw('news',this)" id="tab-news">📰 NEWS</button>
   <button class="tab" onclick="sw('jnl',this)" id="tab-jnl">📓 JOURNAL</button>
@@ -369,6 +371,108 @@ input[type=range]{padding:0;accent-color:var(--gold);}
   </div>
 </div></div>
 
+<!-- US100 TAB -->
+<div id="tc-us100" class="tc"><div class="main">
+  <div class="g4" style="margin-bottom:11px">
+    <div class="mc"><div class="lbl">US100 PRICE · 2s</div><div class="val" style="color:var(--teal,#2dd4bf)" id="us100-p">----</div></div>
+    <div class="mc"><div class="lbl">DAILY CHANGE</div><div class="val" id="us100-c">--</div></div>
+    <div class="mc"><div class="lbl">SESSION HIGH</div><div class="val sm" id="us100-h">--</div></div>
+    <div class="mc"><div class="lbl">SESSION LOW</div><div class="val sm" id="us100-l">--</div></div>
+  </div>
+  <div class="row">
+    <div class="cl">
+      <div class="card" style="border-color:rgba(45,212,191,.3)">
+        <div class="stitle" style="color:var(--teal,#2dd4bf)">VWAP + EMA9 — US100 (NASDAQ)</div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:8px;color:var(--purple);margin-bottom:6px">▌ 4H TIMEFRAME</div>
+          <div class="g2" style="margin-bottom:6px">
+            <div class="mc"><div class="lbl">VWAP (4H)</div><div class="val sm" id="us100-v4h">---</div></div>
+            <div class="mc"><div class="lbl">EMA9 (4H)</div><div class="val sm" id="us100-e4h">---</div></div>
+          </div>
+          <div class="rw"><span class="rl">4H Candle vs VWAP+EMA9</span><span id="us100-4h-pvwap" class="tag tw">---</span></div>
+          <div class="rw"><span class="rl">4H Candle Color</span><span id="us100-4h-pema" class="tag tw">---</span></div>
+          <div class="rw"><span class="rl">4H Bias</span><span id="us100-4h-bias" class="tag tw">NEUTRAL</span></div>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:8px;color:var(--green);margin-bottom:6px">▌ 1H TIMEFRAME</div>
+          <div class="g2" style="margin-bottom:6px">
+            <div class="mc"><div class="lbl">VWAP (1H)</div><div class="val sm" id="us100-v1h">---</div></div>
+            <div class="mc"><div class="lbl">EMA9 (1H)</div><div class="val sm" id="us100-e1h">---</div></div>
+          </div>
+          <div class="rw"><span class="rl">1H Candle vs VWAP+EMA9</span><span id="us100-1h-pvwap" class="tag tw">---</span></div>
+          <div class="rw"><span class="rl">1H Candle Color</span><span id="us100-1h-pema" class="tag tw">---</span></div>
+          <div class="rw"><span class="rl">First Cross</span><span id="us100-1h-cross" class="tag tw">---</span></div>
+          <div class="rw"><span class="rl">1H Bias</span><span id="us100-1h-bias" class="tag tw">NEUTRAL</span></div>
+        </div>
+        <div>
+          <div style="font-size:8px;color:var(--amber);margin-bottom:6px">▌ 30M ENTRY</div>
+          <div class="rw"><span class="rl">EMA9 Cross 30M</span><span id="us100-15-cross" class="tag tw">NONE</span></div>
+          <div class="rw"><span class="rl">Pattern</span><span id="us100-15-pat" class="tag tw">NONE</span></div>
+          <div class="rw"><span class="rl">Entry Confirmed</span><span id="us100-15-conf" class="tag tw">WAITING</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-color:rgba(45,212,191,.3)">
+        <div class="stitle" style="color:var(--teal,#2dd4bf)">SETUP SCORE — US100</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px">
+          <div class="score-big" id="us100-sc-num" style="color:var(--t3)">--</div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span id="us100-sc-grade" class="tag tw" style="font-size:9px">--/10</span>
+              <span id="us100-sc-dir" style="font-size:12px;font-weight:700;color:var(--t3)">WAIT</span>
+            </div>
+            <div id="us100-sc-tf" style="font-size:8px;color:var(--t3)">Loading...</div>
+          </div>
+        </div>
+        <div class="reasons" id="us100-sc-reasons"></div>
+        <div class="abox" id="us100-sc-action">Analysing VWAP+EMA9 for US100...</div>
+      </div>
+      <div class="card ab">
+        <div class="stitle am">S/R DEMAND &amp; SUPPLY — US100</div>
+        <div class="rw"><span class="rl">Nearest Demand Zone</span><span class="rv" id="us100-snr-demand" style="color:var(--green)">---</span></div>
+        <div class="rw"><span class="rl">Nearest Supply Zone</span><span class="rv" id="us100-snr-supply" style="color:var(--red)">---</span></div>
+        <div id="us100-snr-status" style="font-size:9px;color:var(--t3);padding:7px 0">Scanning zones...</div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:5px">
+          <span class="stitle" style="margin:0;border:none;padding:0">CANDLE VOLUME · 30M</span>
+          <span id="us100-vol-info" style="font-size:8px;color:var(--t3)">Loading...</span>
+        </div>
+        <div class="volwrap" id="us100-vol" style="overflow-x:auto"></div>
+        <div class="g4" style="margin-top:8px">
+          <div class="mc"><div class="lbl">Current</div><div class="val sm" style="color:var(--teal,#2dd4bf)" id="us100-vc">---</div></div>
+          <div class="mc"><div class="lbl">Avg 10</div><div class="val sm" id="us100-va">---</div></div>
+          <div class="mc"><div class="lbl">vs Avg</div><div class="val sm" id="us100-vr">---</div></div>
+          <div class="mc"><div class="lbl">Signal</div><div class="val sm" id="us100-vs" style="color:var(--amber)">---</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="cr">
+      <div class="card" style="margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:5px">
+          <span class="stitle" style="margin:0;border:none;padding:0">LATEST US100 SIGNAL</span>
+          <div style="display:flex;gap:5px"><span id="us100-cnt-today" class="tag ti">0 today</span><span id="us100-cnt-total" class="tag tg">0 total</span></div>
+        </div>
+        <div id="us100-sig-latest"><div style="color:var(--t3);font-size:9px;padding:16px;text-align:center;background:var(--bg3);border-radius:4px">No US100 signals yet. Monitoring NASDAQ 100 24/5.</div></div>
+      </div>
+      <div class="card" style="margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:5px">
+          <span class="stitle" style="margin:0;border:none;padding:0">RECENT US100 SIGNALS</span>
+          <button class="btn" onclick="doClear('us100')" style="font-size:7px;padding:2px 7px">🗑</button>
+        </div>
+        <div id="us100-sig-list"><div style="color:var(--t3);font-size:9px;padding:10px;text-align:center">No previous signals.</div></div>
+      </div>
+      <div class="card">
+        <div class="stitle" style="color:var(--teal,#2dd4bf)">US100 MARKET INFO</div>
+        <div class="rw"><span class="rl">Market Hours</span><span class="rv" style="color:var(--t2)">NYSE: 9:30AM–4PM EST</span></div>
+        <div class="rw"><span class="rl">IST Hours</span><span class="rv" style="color:var(--t2)">7PM–1:30AM IST</span></div>
+        <div class="rw"><span class="rl">Pre-market</span><span class="rv" style="color:var(--t3)">4AM–9:30AM EST</span></div>
+        <div class="rw"><span class="rl">Data Source</span><span class="rv" style="color:var(--t3)">Yahoo Finance ^NDX</span></div>
+        <div id="news-compact-us100"><div style="color:var(--t3);font-size:9px;padding:6px">Loading news risk...</div></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
 <!-- SIGNALS TAB -->
 <div id="tc-sigs" class="tc"><div class="main">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;flex-wrap:wrap;gap:8px">
@@ -424,6 +528,7 @@ input[type=range]{padding:0;accent-color:var(--gold);}
     <button class="btn" onclick="jf='all';renderJnl()" style="color:var(--gold)">ALL</button>
     <button class="btn" onclick="jf='xau';renderJnl()">XAU</button>
     <button class="btn" onclick="jf='btc';renderJnl()" style="color:var(--blue)">BTC</button>
+    <button class="btn" onclick="jf='us100';renderJnl()" style="color:var(--teal,#2dd4bf)">US100</button>
     <button class="btn gr" onclick="jf='win';renderJnl()">WINS</button>
     <button class="btn rd" onclick="jf='loss';renderJnl()">LOSSES</button>
     <button class="btn" onclick="jf='open';renderJnl()">OPEN</button>
@@ -493,7 +598,11 @@ var xauSigs=[],btcSigs=[];
 var newsEvs=[],newsFilter='ALL',newsLoaded='';
 var xauLastCheck=0,xauLastBuy=0,xauLastSell=0;
 var btcLastCheck=0,btcLastBuy=0,btcLastSell=0;
-var snrLastCheck={xau:0,btc:0},snrLastBuy={xau:0,btc:0},snrLastSell={xau:0,btc:0};
+var snrLastCheck={xau:0,btc:0,us100:0},snrLastBuy={xau:0,btc:0,us100:0},snrLastSell={xau:0,btc:0,us100:0};
+var US100={price:0,high:0,low:0,dailyOpen:0};
+var us100C30M=[],us100C1H=[],us100C4H=[];
+var us100Sigs=[];
+var us100LastCheck=0,us100LastBuy=0,us100LastSell=0;
 var soundOn=true,jf='all',sfilt='all';
 var alertVolume=0.65;
 var tgToken='',tgChatId='';
@@ -514,7 +623,7 @@ function mergeSigs(existing,incoming){
   return merged.sort(function(a,b){return(b.id||0)-(a.id||0);});
 }
 function pollSigsFromStorage(){
-  ['xau','btc'].forEach(function(sym){
+  ['xau','btc','us100'].forEach(function(sym){
     try{
       var raw=localStorage.getItem('ve_'+sym);if(!raw)return;
       var inc=JSON.parse(raw);
@@ -545,7 +654,7 @@ function setTag(id,cls,txt){var e=gel(id);if(e){e.className='tag '+cls;e.textCon
 function toast(msg){var el=gel('toast');if(!el)return;el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove('show');},2500);}
 function saveSigs(sym){
   try{
-    var data=JSON.stringify(sym==='btc'?btcSigs:xauSigs);
+    var data=JSON.stringify(sym==='us100'?us100Sigs:sym==='btc'?btcSigs:xauSigs);
     localStorage.setItem('ve_'+sym,data);
     if(syncChannel)syncChannel.postMessage({type:'SIGS_UPDATE',sym:sym,data:data});
   }catch(e){}
@@ -553,11 +662,12 @@ function saveSigs(sym){
 function loadSigs(){
   try{var x=localStorage.getItem('ve_xau');xauSigs=x?JSON.parse(x):[];}catch(e){xauSigs=[];}
   try{var b=localStorage.getItem('ve_btc');btcSigs=b?JSON.parse(b):[];}catch(e){btcSigs=[];}
+  try{var u=localStorage.getItem('ve_us100');us100Sigs=u?JSON.parse(u):[];}catch(e){us100Sigs=[];}
 }
 
 // ═══ TABS ═══
 function sw(name,el){
-  ['xau','btc','sigs','news','jnl','notif'].forEach(function(t){var tc=gel('tc-'+t);if(tc)tc.classList.remove('on');});
+  ['xau','btc','us100','sigs','news','jnl','notif'].forEach(function(t){var tc=gel('tc-'+t);if(tc)tc.classList.remove('on');});
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
   var tc=gel('tc-'+name);if(tc)tc.classList.add('on');
   if(el)el.classList.add('on');
@@ -569,7 +679,7 @@ function sw(name,el){
   if(name==='sigs')renderAllSigs();
   if(name==='notif')loadNotifSettings();
   setTimeout(function(){
-    ['xau-vol','btc-vol'].forEach(function(id){var e=gel(id);if(e)e.scrollLeft=99999;});
+    ['xau-vol','btc-vol','us100-vol'].forEach(function(id){var e=gel(id);if(e)e.scrollLeft=99999;});
   },150);
 }
 
@@ -848,32 +958,65 @@ function fetchBTC(){
       renderPrice('btc');
     }).catch(function(){});
 }
+function fetchUS100(){
+  // US100 = Nasdaq 100 futures via Binance NQ1! or Yahoo Finance proxy
+  // Primary: Yahoo Finance via allorigins proxy
+  fetch('https://api.allorigins.win/get?url='+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?interval=1m&range=1d'))
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var raw=JSON.parse(d.contents||'{}');
+      var q=raw&&raw.chart&&raw.chart.result&&raw.chart.result[0];
+      if(!q)throw 0;
+      var meta=q.meta;
+      var p=parseFloat(meta.regularMarketPrice||meta.previousClose||0);
+      if(!p)throw 0;
+      US100.price=p;
+      if(!US100.dailyOpen)US100.dailyOpen=parseFloat(meta.chartPreviousClose||meta.previousClose||p);
+      if(p>US100.high||!US100.high)US100.high=p;
+      if(p<US100.low||!US100.low)US100.low=p;
+      renderPrice('us100');
+      set('feed-lbl','LIVE');
+    }).catch(function(){
+      // Fallback: use Binance NQ futures (NQ1! not available on spot, use MNQ proxy)
+      // Second fallback: use a static price update from last known
+      if(US100.price>0)renderPrice('us100'); // keep last known price
+    });
+}
 function fetchDailyOpens(){
   fetch('https://api.binance.com/api/v3/klines?symbol=XAUUSDT&interval=1d&limit=2').then(function(r){return r.json();}).then(function(d){if(Array.isArray(d)&&d.length)XAU.dailyOpen=parseFloat(d[d.length-1][1]);}).catch(function(){});
   fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=2').then(function(r){return r.json();}).then(function(d){if(Array.isArray(d)&&d.length)BTC.dailyOpen=parseFloat(d[d.length-1][1]);}).catch(function(){});
 }
 function renderPrice(sym){
-  var obj=sym==='xau'?XAU:BTC,o=obj.dailyOpen||obj.price,p=obj.price;
+  var obj=sym==='xau'?XAU:sym==='btc'?BTC:US100,o=obj.dailyOpen||obj.price,p=obj.price;
   var chg=p-o,pct=o?(chg/o*100):0;
   var cs=(chg>=0?'+':'')+fmt(chg)+' ('+(chg>=0?'+':'')+pct.toFixed(2)+'%)';
   var isBTC=sym==='btc';
-  if(!isBTC){
+  if(sym==='xau'){
     set('xp',fmt(p));set('xau-p',fmt(p));set('xau-h',fmt(obj.high));set('xau-l',fmt(obj.low));
     var xc=gel('xc');if(xc){xc.textContent=cs;xc.className=chg>=0?'up':'dn';}
     var mc=gel('xau-c');if(mc){mc.textContent=cs;mc.className='val '+(chg>=0?'up':'dn');}
     if(!goldClosed){var el=gel('xp');if(el){el.classList.add('flash');setTimeout(function(){el.classList.remove('flash');},400);}}
-  } else {
+  } else if(sym==='btc'){
     var ps=fmtK(Math.round(p));set('bp',ps);set('btc-p',ps);set('btc-h',fmtK(Math.round(obj.high)));set('btc-l',fmtK(Math.round(obj.low)));
     var bchg='$'+(chg>=0?'+':'')+fmtK(Math.round(chg))+' ('+(chg>=0?'+':'')+pct.toFixed(2)+'%)';
     var bc=gel('bc');if(bc){bc.textContent=bchg;bc.className=chg>=0?'up':'dn';}
     var bm=gel('btc-c');if(bm){bm.textContent=bchg;bm.className='val '+(chg>=0?'up':'dn');}
     var el2=gel('bp');if(el2){el2.classList.add('flashb');setTimeout(function(){el2.classList.remove('flashb');},400);}
+  } else if(sym==='us100'){
+    var ps2=fmtK(Math.round(p));
+    set('u100p',ps2);set('us100-p',ps2);
+    set('us100-h',fmtK(Math.round(obj.high)));set('us100-l',fmtK(Math.round(obj.low)));
+    var uchg='$'+(chg>=0?'+':'')+fmtK(Math.round(chg))+' ('+(chg>=0?'+':'')+pct.toFixed(2)+'%)';
+    var uc=gel('u100c');if(uc){uc.textContent=uchg;uc.className=chg>=0?'up':'dn';}
+    var um=gel('us100-c');if(um){um.textContent=uchg;um.className='val '+(chg>=0?'up':'dn');}
+    var el3=gel('u100p');if(el3){el3.classList.add('flashb');setTimeout(function(){el3.classList.remove('flashb');},400);}
   }
   // Update tab title
   if(XAU.price&&BTC.price){
+    var u100Chg=US100.dailyOpen?(US100.price-US100.dailyOpen)/US100.dailyOpen*100:0;
     var xChg=XAU.dailyOpen?(XAU.price-XAU.dailyOpen)/XAU.dailyOpen*100:0;
     var bChg=BTC.dailyOpen?(BTC.price-BTC.dailyOpen)/BTC.dailyOpen*100:0;
-    document.title='XAU '+fmt(XAU.price)+(xChg>=0?' ▲':' ▼')+Math.abs(xChg).toFixed(2)+'% | BTC '+fmtK(Math.round(BTC.price))+(bChg>=0?' ▲':' ▼')+Math.abs(bChg).toFixed(2)+'%';
+    document.title='XAU '+fmt(XAU.price)+(xChg>=0?' ▲':' ▼')+Math.abs(xChg).toFixed(2)+'% | BTC '+fmtK(Math.round(BTC.price))+(bChg>=0?' ▲':' ▼')+Math.abs(bChg).toFixed(2)+'%'+(US100.price?' | US100 '+fmtK(Math.round(US100.price))+(u100Chg>=0?' ▲':' ▼')+Math.abs(u100Chg).toFixed(2)+'%':'');
   }
   autoMarkSigs();
 }
@@ -898,6 +1041,32 @@ function fetchAllCandles(){
   fetchTF('btc','30m',80,function(d){btcC30M=d;renderVol('btc',d);});
   fetchTF('btc','1h',100,function(d){btcC1H=d;});
   fetchTF('btc','4h',60,function(d){btcC4H=d;});
+  // US100 candles from Yahoo Finance via proxy
+  fetchUS100Candles();
+}
+function fetchUS100Candles(){
+  function buildCandles(url,interval,limit,cb){
+    fetch('https://api.allorigins.win/get?url='+encodeURIComponent(url))
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var raw=JSON.parse(d.contents||'{}');
+        var q=raw&&raw.chart&&raw.chart.result&&raw.chart.result[0];
+        if(!q)throw 0;
+        var ts=q.timestamps||q.timestamp||[];
+        var ohlcv=q.indicators&&q.indicators.quote&&q.indicators.quote[0];
+        if(!ohlcv||!ts.length)throw 0;
+        var candles=[];
+        for(var i=0;i<ts.length;i++){
+          if(ohlcv.close[i]==null)continue;
+          candles.push({t:ts[i]*1000,open:ohlcv.open[i]||ohlcv.close[i],high:ohlcv.high[i]||ohlcv.close[i],low:ohlcv.low[i]||ohlcv.close[i],close:ohlcv.close[i],vol:ohlcv.volume[i]||1000});
+        }
+        if(candles.length>limit)candles=candles.slice(-limit);
+        cb(candles);
+      }).catch(function(){});
+  }
+  buildCandles('https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?interval=30m&range=5d',30,80,function(d){us100C30M=d;renderVol('us100',d);});
+  buildCandles('https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?interval=1h&range=10d',60,100,function(d){us100C1H=d;});
+  buildCandles('https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?interval=4h&range=20d',240,60,function(d){us100C4H=d;});
 }
 
 // ═══ VOLUME RENDER ═══
@@ -932,8 +1101,11 @@ function renderVol(sym,candles){
 // ═══ RUN ANALYSIS ═══
 function runAnalysis(sym){
   var isBTC=sym==='btc';
-  var c4H=isBTC?btcC4H:xauC4H,c1H=isBTC?btcC1H:xauC1H,c15M=isBTC?btcC30M:xauC30M;
-  var price=(isBTC?BTC:XAU).price;
+  var isUS100=sym==='us100';
+  var c4H=isUS100?us100C4H:isBTC?btcC4H:xauC4H;
+  var c1H=isUS100?us100C1H:isBTC?btcC1H:xauC1H;
+  var c15M=isUS100?us100C30M:isBTC?btcC30M:xauC30M;
+  var price=(isUS100?US100:isBTC?BTC:XAU).price;
   if(!price)return;
   var res=analyseVWAPEMA(sym,c4H,c1H,c15M,price);
   if(res){updatePanel(sym,res,price);checkSignal(sym,res,price,'VWAP');}
@@ -956,19 +1128,19 @@ function checkSignal(sym,res,price,strategy){
     if(now-(isBTC?btcLastCheck:xauLastCheck)<5000)return;
     if(isBTC)btcLastCheck=now;else xauLastCheck=now;
     if(res.score<5)return;
-    if(res.dir==='bull'&&(now-(isBTC?btcLastBuy:xauLastBuy)<5400000))return;
-    if(res.dir==='bear'&&(now-(isBTC?btcLastSell:xauLastSell)<5400000))return;
+    if(res.dir==='bull'&&(now-(sym==='us100'?us100LastBuy:isBTC?btcLastBuy:xauLastBuy)<5400000))return;
+    if(res.dir==='bear'&&(now-(sym==='us100'?us100LastSell:isBTC?btcLastSell:xauLastSell)<5400000))return;
   } else {
     if(now-(snrLastCheck[sym]||0)<5000)return;
     snrLastCheck[sym]=now;
     if(res.dir==='bull'&&(now-(snrLastBuy[sym]||0)<5400000))return;
     if(res.dir==='bear'&&(now-(snrLastSell[sym]||0)<5400000))return;
   }
-  var sigs=isBTC?btcSigs:xauSigs;
+  var sigs=sym==='us100'?us100Sigs:isBTC?btcSigs:xauSigs;
   var today=getISTStr();
   var dc=sigs.filter(function(s){return s.date===today&&s.dir===(res.dir==='bull'?'BUY':'SELL')&&s.strategy===strategy;}).length;
   if(dc>=3)return;
-  var zp=isBTC?Math.round(price/100)*100:Math.round(price/5)*5;
+  var zp=(isBTC||sym==='us100')?Math.round(price/100)*100:Math.round(price/5)*5;
   var key=today+'_'+strategy+'_'+(res.dir==='bull'?'B':'S')+'_'+zp;
   if(sigs.some(function(s){return s.key===key;}))return;
   if(res.dir==='bull'){if(strategy==='VWAP'){if(isBTC)btcLastBuy=now;else xauLastBuy=now;}else snrLastBuy[sym]=now;}
@@ -981,7 +1153,7 @@ function checkSignal(sym,res,price,strategy){
   var sl=parseFloat(fmt(bull?price-slDist:price+slDist));
   var tp1=parseFloat(fmt(bull?price+slDist*3:price-slDist*3));
   var tp2=parseFloat(fmt(bull?price+slDist*5:price-slDist*5));
-  var slPips=isBTC?Math.round(slDist):Math.round(slDist*10);
+  var slPips=(isBTC||sym==='us100')?Math.round(slDist):Math.round(slDist*10);
   var tp1Pips=slPips*3;
   if(slPips<20||tp1Pips<60)return;
   var ist2=getIST();
@@ -989,7 +1161,7 @@ function checkSignal(sym,res,price,strategy){
   var kz=!isBTC?getKZ(ist2.getUTCHours()*60+ist2.getUTCMinutes()):'24/7';
   var slLogic=bull?'SL '+fmt(sl)+' = below '+(strategy==='VWAP'?'1H VWAP ('+fmt(vwapSL)+')':'demand zone '+(res.zone?fmt(res.zone.bot):'--'))+' — invalid if closes below':'SL '+fmt(sl)+' = above '+(strategy==='VWAP'?'1H VWAP ('+fmt(vwapSL)+')':'supply zone '+(res.zone?fmt(res.zone.top):'--'))+' — invalid if closes above';
   var sig={id:now,key:key,date:today,time:ts,sym:sym.toUpperCase(),strategy:strategy,dir:bull?'BUY':'SELL',quality:res.grade,score:res.score,entry:parseFloat(fmt(price)),sl:sl,tp1:tp1,tp2:tp2,slPips:slPips,tp1Pips:tp1Pips,rr:3,session:kz.replace(/_/g,' '),outcome:'open',pnlPips:null,reasons:res.reasons.slice(0,4),slLogic:slLogic,tp1Logic:'TP1 '+fmt(tp1)+' = 3x SL (1:3 R:R, '+tp1Pips+(isBTC?'$':'p')+')',tp2Logic:'TP2 '+fmt(tp2)+' = 5x SL (extended target)'};
-  if(isBTC)btcSigs.push(sig);else xauSigs.push(sig);
+  if(sym==='us100')us100Sigs.push(sig);else if(isBTC)btcSigs.push(sig);else xauSigs.push(sig);
   saveSigs(sym);renderSigs(sym);renderAllSigs();renderJnl();
   lastSignalTime=Date.now();
   var body=res.reasons.slice(0,3).join(' | ')+'\nEntry: '+fmt(price)+' SL: '+fmt(sl)+' ('+slPips+(isBTC?'$':'p')+')\nTP1: '+fmt(tp1)+' (+'+tp1Pips+(isBTC?'$':'p')+') TP2: '+fmt(tp2)+'\n'+slLogic+'\nStrategy: '+strategy;
@@ -1027,6 +1199,7 @@ function autoMarkSigs(){
   }
   chk(xauSigs,'xau',XAU.price);
   chk(btcSigs,'btc',BTC.price);
+  chk(us100Sigs,'us100',US100.price);
 }
 
 // ═══ NO-ALERT MONITOR ═══
@@ -1035,7 +1208,7 @@ function checkNoAlertStatus(){
   var hrs=(now-lastSignalTime)/3600000;
   if(hrs>=4&&(now-lastNoAlertNotif)>14400000){
     lastNoAlertNotif=now;
-    var msg='No signal in last '+Math.round(hrs)+'h. Dashboard monitoring XAU+BTC. '+new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata',hour12:false,hour:'2-digit',minute:'2-digit'})+' IST';
+    var msg='No signal in last '+Math.round(hrs)+'h. Dashboard monitoring XAU+BTC+US100. '+new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata',hour12:false,hour:'2-digit',minute:'2-digit'})+' IST';
     sendTelegramMsg('⏳ '+msg);
     var box=gel('nalbox');if(box){var div=document.createElement('div');div.className='nal xau';div.style.borderColor='rgba(100,116,139,.4)';div.innerHTML='<span class="nalx" onclick="this.parentNode.remove()">✕</span><div style="font-weight:700;margin-bottom:2px">No Signal ('+Math.round(hrs)+'h)</div><div style="color:var(--t3);font-size:8px">Watching 4H+1H candle closes on XAU+BTC</div>';box.insertBefore(div,box.firstChild);setTimeout(function(){if(div.parentNode)div.remove();},15000);}
   }
@@ -1064,7 +1237,7 @@ function showAlert(sym,type,title,body){
 
 // ═══ SIGNAL CARDS ═══
 function markSig(sym,id,outcome){
-  var sigs=sym==='btc'?btcSigs:xauSigs;
+  var sigs=sym==='us100'?us100Sigs:sym==='btc'?btcSigs:xauSigs;
   var s=sigs.find(function(x){return x.id===id;});if(!s)return;
   s.outcome=outcome;
   if(outcome==='open')s.pnlPips=null;
@@ -1077,8 +1250,8 @@ function markSig(sym,id,outcome){
   sendTelegramMsg('Trade Update: '+(outcome==='open'?'Reopened':outcome.toUpperCase())+'\n'+s.dir+' '+s.sym+' Entry: '+fmt(s.entry)+'\nOutcome: '+outcome.toUpperCase());
 }
 function buildCard(sig,latest,full){
-  var bull=sig.dir==='BUY',open=sig.outcome==='open',isBTC=sig.sym==='BTC';
-  var p=(sig.sym==='XAU'?XAU:BTC).price||sig.entry;
+  var bull=sig.dir==='BUY',open=sig.outcome==='open',isBTC=sig.sym==='BTC'||sig.sym==='US100';
+  var p=(sig.sym==='XAU'?XAU:sig.sym==='BTC'?BTC:US100).price||sig.entry;
   var pnl=open?(isBTC?(bull?Math.round(p-sig.entry):Math.round(sig.entry-p)):(bull?Math.round((p-sig.entry)*100):Math.round((sig.entry-p)*100))):(sig.pnlPips||0);
   var prog=open&&sig.tp1!==sig.entry?Math.min(100,Math.max(0,Math.round((bull?p-sig.entry:sig.entry-p)/(bull?sig.tp1-sig.entry:sig.entry-sig.tp1)*100))):0;
   var u=isBTC?'$':'p';
@@ -1113,7 +1286,7 @@ function renderSigs(sym){
   var sl=gel(sym+'-sig-list');if(sl)sl.innerHTML=sorted.length<=1?'<div style="color:var(--t3);font-size:9px;padding:10px;text-align:center">Previous signals appear here.</div>':sorted.slice(1,5).map(function(s){return buildCard(s,false,false);}).join('');
 }
 function renderAllSigs(){
-  var all=xauSigs.concat(btcSigs).slice().sort(function(a,b){return(b.id||0)-(a.id||0);});
+  var all=xauSigs.concat(btcSigs).concat(us100Sigs).slice().sort(function(a,b){return(b.id||0)-(a.id||0);});
   var f=all.filter(function(s){if(sfilt==='xau')return s.sym==='XAU';if(sfilt==='btc')return s.sym==='BTC';if(sfilt==='open')return s.outcome==='open';if(sfilt==='tp')return s.outcome==='tp1'||s.outcome==='tp2';if(sfilt==='sl')return s.outcome==='sl';return true;});
   var oc=all.filter(function(s){return s.outcome==='open';}).length;
   var tc=all.filter(function(s){return s.outcome==='tp1'||s.outcome==='tp2';}).length;
@@ -1124,12 +1297,12 @@ function renderAllSigs(){
   var el=gel('sig-all-list');if(!el)return;
   el.innerHTML=f.length?f.map(function(s){return buildCard(s,false,true);}).join(''):'<div style="text-align:center;color:var(--t3);font-size:10px;padding:30px">'+(all.length===0?'No signals yet.':'No signals match filter.')+'</div>';
 }
-function doClear(sym){if(confirm('Clear all '+sym.toUpperCase()+' signals?')){if(sym==='btc')btcSigs=[];else xauSigs=[];saveSigs(sym);renderSigs(sym);renderAllSigs();renderJnl();toast('Cleared '+sym.toUpperCase());}}
+function doClear(sym){if(confirm('Clear all '+sym.toUpperCase()+' signals?')){if(sym==='us100')us100Sigs=[];else if(sym==='btc')btcSigs=[];else xauSigs=[];saveSigs(sym);renderSigs(sym);renderAllSigs();renderJnl();toast('Cleared '+sym.toUpperCase());}}
 
 // ═══ JOURNAL ═══
 function renderJnl(){
-  var all=xauSigs.concat(btcSigs).slice().sort(function(a,b){return(b.id||0)-(a.id||0);});
-  var f=all.filter(function(s){if(jf==='xau')return s.sym==='XAU';if(jf==='btc')return s.sym==='BTC';if(jf==='win')return s.outcome==='tp1'||s.outcome==='tp2';if(jf==='loss')return s.outcome==='sl';if(jf==='open')return s.outcome==='open';return true;});
+  var all=xauSigs.concat(btcSigs).concat(us100Sigs).slice().sort(function(a,b){return(b.id||0)-(a.id||0);});
+  var f=all.filter(function(s){if(jf==='xau')return s.sym==='XAU';if(jf==='btc')return s.sym==='BTC';if(jf==='us100')return s.sym==='US100';if(jf==='win')return s.outcome==='tp1'||s.outcome==='tp2';if(jf==='loss')return s.outcome==='sl';if(jf==='open')return s.outcome==='open';return true;});
   var cl=all.filter(function(s){return s.outcome!=='open';}),w=cl.filter(function(s){return s.outcome==='tp1'||s.outcome==='tp2';});
   var np=cl.reduce(function(a,s){return a+(s.pnlPips||0);},0);
   var pnl=(np*.5*.05).toFixed(2),wr=cl.length?Math.round(w.length/cl.length*100):0;
@@ -1173,14 +1346,15 @@ function init(){
   applyTheme(localStorage.getItem('vgt')==='l');
   soundOn=localStorage.getItem('vgs')!=='0';set('sbtn',soundOn?'🔔 ON':'🔕 OFF');
   loadSigs();loadTelegram();loadEmailConfig();
-  renderSigs('xau');renderSigs('btc');renderAllSigs();renderJnl();
-  fetchDailyOpens();fetchXAU();fetchBTC();fetchAllCandles();fetchNews();
+  renderSigs('xau');renderSigs('btc');renderSigs('us100');renderAllSigs();renderJnl();
+  fetchDailyOpens();fetchXAU();fetchBTC();fetchUS100();fetchAllCandles();fetchNews();
   updateClock();
   setInterval(updateClock,1000);
   setInterval(fetchXAU,100);
   setInterval(fetchBTC,100);
+  setInterval(fetchUS100,2000); // US100 via Yahoo - 2s (rate limit friendly)
   setInterval(fetchAllCandles,60000);
-  setInterval(function(){runAnalysis('xau');runAnalysis('btc');},5000);
+  setInterval(function(){runAnalysis('xau');runAnalysis('btc');runAnalysis('us100');},5000);
   setInterval(function(){renderSigs('xau');renderSigs('btc');},10000);
   setInterval(pollSigsFromStorage,10000);
   setInterval(renderNews,30000);
