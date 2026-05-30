@@ -548,12 +548,13 @@ input[type=range]{padding:0;accent-color:var(--gold);}
   <div class="card" style="margin-bottom:12px;border-color:rgba(96,165,250,.25)">
     <div class="stitle bl">TELEGRAM ALERTS</div>
     <div style="font-size:8px;color:var(--t3);margin-bottom:10px;line-height:1.8">1. Open <strong style="color:var(--t1)">@BotFather</strong> on Telegram → /newbot → copy Bot Token<br>2. Message your bot once<br>3. Open https://api.telegram.org/bot{TOKEN}/getUpdates → copy your Chat ID</div>
-    <div class="rw"><span class="rl">Bot Token</span><input id="tg-token" type="text" placeholder="123456789:ABC..." style="flex:1;max-width:290px"></div>
+    <div class="rw"><span class="rl">Bot Token</span><input id="tg-token" type="text" placeholder="Paste bot token here (will be masked after save)" style="flex:1;max-width:290px"></div>
     <div class="rw"><span class="rl">Chat ID</span><input id="tg-chatid" type="text" placeholder="Your chat_id" style="flex:1;max-width:290px"></div>
     <div class="rw"><span class="rl">Status</span><span id="tg-status" class="tag tw">Not configured</span></div>
     <div style="display:flex;gap:7px;margin-top:9px">
       <button class="btn" onclick="saveTelegram()" style="border-color:rgba(96,165,250,.4);color:var(--blue)">Save</button>
-      <button class="btn" onclick="testTelegram()">Send Test</button>
+      <button class="btn" onclick="testTelegram()" style="border-color:rgba(34,197,94,.4);color:var(--green)">Send Test</button>
+      <button class="btn rd" onclick="clearTelegram()">Reset</button>
     </div>
   </div>
   <div class="card" style="border-color:rgba(34,197,94,.2)">
@@ -1215,12 +1216,84 @@ function checkNoAlertStatus(){
 }
 
 // ═══ TELEGRAM ═══
-function sendTelegramMsg(text){if(!tgToken||!tgChatId)return;fetch('https://api.telegram.org/bot'+tgToken+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:tgChatId,text:text})}).catch(function(){});}
-function saveTelegram(){tgToken=(gel('tg-token')||{value:''}).value.trim();tgChatId=(gel('tg-chatid')||{value:''}).value.trim();localStorage.setItem('ve_tg',JSON.stringify({t:tgToken,c:tgChatId}));setTag('tg-status',tgToken&&tgChatId?'tb':'tw',tgToken&&tgChatId?'Configured ✓':'Incomplete');toast(tgToken&&tgChatId?'Telegram saved':'Fill both fields');}
-function loadTelegram(){try{var d=JSON.parse(localStorage.getItem('ve_tg')||'{}');tgToken=d.t||'';tgChatId=d.c||'';var te=gel('tg-token'),ce=gel('tg-chatid');if(te)te.value=tgToken;if(ce)ce.value=tgChatId;if(tgToken&&tgChatId)setTag('tg-status','tb','Configured ✓');}catch(e){}}
-function testTelegram(){if(!tgToken||!tgChatId){toast('Save token and chat ID first');return;}sendTelegramMsg('✅ VWAPgold Test\nTelegram alerts working!\nTime: '+new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata',hour12:false})+' IST');toast('Test sent to Telegram');}
+function sendTelegramMsg(text,onDone){
+  if(!tgToken||!tgChatId)return;
+  fetch('https://api.telegram.org/bot'+tgToken+'/sendMessage',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({chat_id:tgChatId,text:text})
+  }).then(function(r){return r.json();})
+  .then(function(d){
+    if(!d.ok){
+      var err='Telegram error '+d.error_code+': '+d.description;
+      console.error(err);
+      if(onDone)onDone(false,err);
+    } else {
+      if(onDone)onDone(true,'');
+    }
+  }).catch(function(e){
+    console.error('Telegram fetch failed:',e);
+    if(onDone)onDone(false,e.message||'Network error');
+  });
+}
+function saveTelegram(){
+  var rawToken=(gel('tg-token')||{value:''}).value.trim();
+  var rawChat=(gel('tg-chatid')||{value:''}).value.trim();
+  // Don't overwrite with masked placeholder
+  if(rawToken&&!rawToken.startsWith('•••'))tgToken=rawToken;
+  if(rawChat&&!rawChat.startsWith('•••'))tgChatId=rawChat;
+  if(!tgToken||!tgChatId){toast('Fill both Token and Chat ID');return;}
+  // Store in localStorage
+  localStorage.setItem('ve_tg',JSON.stringify({t:tgToken,c:tgChatId}));
+  // Mask the token in the input field for security
+  var te=gel('tg-token');
+  if(te)te.value='••••••••:'+tgToken.slice(-6);
+  setTag('tg-status','tb','Configured ✓ (saved)');
+  toast('✅ Telegram saved securely. Tap Test to verify.');
+}
+function loadTelegram(){
+  try{
+    var d=JSON.parse(localStorage.getItem('ve_tg')||'{}');
+    tgToken=d.t||'';tgChatId=d.c||'';
+    var te=gel('tg-token'),ce=gel('tg-chatid');
+    // Show masked token for security
+    if(te)te.value=tgToken?'••••••••:'+tgToken.slice(-6):'';
+    if(ce)ce.value=tgChatId?tgChatId:'';
+    if(tgToken&&tgChatId)setTag('tg-status','tb','Configured ✓');
+  }catch(e){}
+}
+function testTelegram(){
+  if(!tgToken||!tgChatId){toast('Save token and chat ID first');return;}
+  toast('Sending test...');
+  var testMsg='✅ VWAPgold Test'+'\nBot Token: ...'+tgToken.slice(-6)+'\nChat ID: '+tgChatId+'\nTime: '+new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata',hour12:false})+' IST'+'\nTelegram alerts are working!';
+  sendTelegramMsg(testMsg,
+    function(ok,err){
+      if(ok){
+        toast('✅ Telegram working! Check your phone.');
+        setTag('tg-status','tb','Connected ✓');
+      } else {
+        toast('❌ Telegram FAILED: '+err);
+        setTag('tg-status','ts','ERROR: '+err.slice(0,30));
+        // Show fix hints
+        var hints=err.indexOf('404')>=0?'Token wrong — re-copy from @BotFather':
+                  err.indexOf('400')>=0?'Chat ID wrong — re-check getUpdates URL':
+                  err.indexOf('401')>=0?'Token invalid — create new bot':
+                  'Check token and chat ID';
+        setTimeout(function(){toast('⚠ Fix: '+hints);},3000);
+      }
+    }
+  );
+}
 
 // ═══ EMAIL ═══
+function clearTelegram(){
+  if(!confirm('Remove saved Telegram credentials?'))return;
+  tgToken='';tgChatId='';
+  localStorage.removeItem('ve_tg');
+  var te=gel('tg-token'),ce=gel('tg-chatid');
+  if(te)te.value='';if(ce)ce.value='';
+  setTag('tg-status','tw','Not configured');
+  toast('Telegram credentials cleared');
+}
 function saveEmail(){ejsConfig.sid=(gel('ejs-sid')||{value:''}).value.trim();ejsConfig.tid=(gel('ejs-tid')||{value:''}).value.trim();ejsConfig.key=(gel('ejs-key')||{value:''}).value.trim();ejsConfig.to=(gel('ejs-to')||{value:'kuldepkalle@gmail.com'}).value.trim();localStorage.setItem('ve_ejs',JSON.stringify(ejsConfig));var ok=ejsConfig.sid&&ejsConfig.tid&&ejsConfig.key;setTag('ejs-status',ok?'tb':'tw',ok?'Configured ✓':'Incomplete');if(ok&&!window.emailjs){var sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';sc.onload=function(){emailjs.init(ejsConfig.key);};document.head.appendChild(sc);}else if(ok&&window.emailjs)emailjs.init(ejsConfig.key);toast(ok?'Email saved':'Fill all fields');}
 function loadEmailConfig(){try{var d=JSON.parse(localStorage.getItem('ve_ejs')||'{}');ejsConfig=Object.assign({sid:'',tid:'',key:'',to:'kuldepkalle@gmail.com'},d);['ejs-sid','ejs-tid','ejs-key','ejs-to'].forEach(function(id,i){var e=gel(id);if(e)e.value=[ejsConfig.sid,ejsConfig.tid,ejsConfig.key,ejsConfig.to][i];});var ok=ejsConfig.sid&&ejsConfig.tid&&ejsConfig.key;if(ok)setTag('ejs-status','tb','Configured ✓');}catch(e){}}
 function sendEmail(subj,body){if(!ejsConfig.sid||!window.emailjs)return;emailjs.send(ejsConfig.sid,ejsConfig.tid,{to_email:ejsConfig.to,subject:subj,message:body}).catch(function(){});}
