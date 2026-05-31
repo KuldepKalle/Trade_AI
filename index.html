@@ -463,7 +463,7 @@ input[type=range]{padding:0;accent-color:var(--gold);}
       </div>
       <div class="card">
         <div class="stitle" style="color:var(--teal,#2dd4bf)">US100 MARKET INFO</div>
-        <div class="rw"><span class="rl">Market Hours</span><span class="rv" style="color:var(--t2)">NYSE: 9:30AM–4PM EST</span></div>
+        <div class="rw"><span class="rl">Market Hours</span><span class="rv" style="color:var(--t2)">Mon–Fri (same as Gold)</span></div>
         <div class="rw"><span class="rl">IST Hours</span><span class="rv" style="color:var(--t2)">7PM–1:30AM IST</span></div>
         <div class="rw"><span class="rl">Pre-market</span><span class="rv" style="color:var(--t3)">4AM–9:30AM EST</span></div>
         <div class="rw"><span class="rl">Data Source</span><span class="rv" style="color:var(--t3)">Yahoo Finance ^NDX</span></div>
@@ -593,6 +593,7 @@ input[type=range]{padding:0;accent-color:var(--gold);}
 var XAU={price:0,high:0,low:0,dailyOpen:0};
 var BTC={price:0,high:0,low:0,dailyOpen:0};
 var goldClosed=false;
+var us100Closed=false;
 var xauC30M=[],xauC1H=[],xauC4H=[];
 var btcC30M=[],btcC1H=[],btcC4H=[];
 var xauSigs=[],btcSigs=[];
@@ -712,7 +713,10 @@ function updateClock(){
   set('clk',hh+':'+mm+':'+ss+' IST');
   var m=ist.getUTCHours()*60+ist.getUTCMinutes(),dow=ist.getUTCDay();
   goldClosed=(dow===6)||(dow===5&&m>=1410)||(dow===0&&m<1380);
-  var mks=gel('mktst');if(mks)mks.style.display=goldClosed?'':'none';
+  // US100 same weekend closure as gold (Nasdaq closed weekends)
+  us100Closed=(dow===6)||(dow===5&&m>=1410)||(dow===0&&m<1380);
+  var mks=gel('mktst');
+  if(mks){mks.style.display=(goldClosed||us100Closed)?'':'none';mks.textContent=goldClosed&&us100Closed?'🔴 XAU + US100 CLOSED':goldClosed?'🔴 XAU CLOSED':'🔴 US100 CLOSED';}
   var ld=gel('ldot');if(ld){ld.style.animation=goldClosed?'none':'pulse 1.5s infinite';ld.style.background=goldClosed?'var(--t3)':'var(--green)';}
   gel('hdr').classList.toggle('mkt-closed',goldClosed);
   function setSess(id,a,ov){var e=gel(id);if(!e)return;if(goldClosed){e.className='si closed';return;}e.className='si'+(ov?' overlap':a?' active':' closed');}
@@ -764,7 +768,7 @@ function detect15M(candles){
 // ═══ VWAP+EMA9 STRATEGY ═══
 function analyseVWAPEMA(sym,c4H,c1H,c15M,price){
   if(!price||price<10)return null;
-  var isClosed=(sym==='xau')&&goldClosed;
+  var isClosed=((sym==='xau')&&goldClosed)||((sym==='us100')&&us100Closed);
   if(!c4H||c4H.length<4||!c1H||c1H.length<4)return null;
   var cl4=c4H.map(function(k){return k.close;}),cl1=c1H.map(function(k){return k.close;});
   var v4=calcVWAP(c4H),e4=calcEMA9(cl4),v1=calcVWAP(c1H),e1=calcEMA9(cl1);
@@ -845,7 +849,7 @@ function detectDemandSupply(c4H,c1H){
 function analyseSNR(sym,c4H,c1H,price){
   if(!price||price<10)return null;
   if(!c1H||c1H.length<5)return null;
-  var isClosed=(sym==='xau')&&goldClosed;
+  var isClosed=((sym==='xau')&&goldClosed)||((sym==='us100')&&us100Closed);
   var ds=detectDemandSupply(c4H,c1H);
   var n=c1H.length,curr=c1H[n-2],prev=c1H[n-3];
   if(!curr||!prev)return{dir:'neutral',score:0,grade:'B',reasons:[],ds:ds,isClosed:isClosed};
@@ -876,13 +880,14 @@ function analyseSNR(sym,c4H,c1H,price){
 function updatePanel(sym,res,price){
   if(!res)return;
   var pre=sym+'-';
-  if((sym==='xau')&&goldClosed){
+  var isClosed=(sym==='xau'&&goldClosed)||(sym==='us100'&&us100Closed);
+  if(isClosed){
     setTag(pre+'4h-bias','tw','CLOSED');setTag(pre+'1h-bias','tw','CLOSED');
     setTag(pre+'15-conf','tw','CLOSED');
     var sn=gel(pre+'sc-num');if(sn){sn.textContent='--';sn.style.color='var(--t3)';}
     setTag(pre+'sc-grade','tw','CLOSED');
     var sd=gel(pre+'sc-dir');if(sd){sd.textContent='MARKET CLOSED';sd.style.color='var(--t3)';}
-    var act=gel(pre+'sc-action');if(act)act.textContent='Gold market closed. Resumes Sunday 11 PM IST.';
+    var act=gel(pre+'sc-action');if(act)act.textContent=(sym==='xau'?'Gold':'US100 Nasdaq')+' market closed (weekend). Resumes Sunday 11 PM IST.';
     return;
   }
   set(pre+'v4h',res.v4?fmt(res.v4):'---');set(pre+'e4h',res.e4?fmt(res.e4):'---');
@@ -960,8 +965,8 @@ function fetchBTC(){
     }).catch(function(){});
 }
 function fetchUS100(){
-  // US100 = Nasdaq 100 futures via Binance NQ1! or Yahoo Finance proxy
-  // Primary: Yahoo Finance via allorigins proxy
+  if(us100Closed){set('feed-lbl','XAU+US100 CLOSED');return;}
+  // US100 = Nasdaq 100 via Yahoo Finance proxy
   fetch('https://api.allorigins.win/get?url='+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?interval=1m&range=1d'))
     .then(function(r){return r.json();})
     .then(function(d){
@@ -1046,6 +1051,7 @@ function fetchAllCandles(){
   fetchUS100Candles();
 }
 function fetchUS100Candles(){
+  if(us100Closed){renderVolClosed('us100');return;}
   function buildCandles(url,interval,limit,cb){
     fetch('https://api.allorigins.win/get?url='+encodeURIComponent(url))
       .then(function(r){return r.json();})
@@ -1071,9 +1077,15 @@ function fetchUS100Candles(){
 }
 
 // ═══ VOLUME RENDER ═══
+function renderVolClosed(sym){
+  var el=document.getElementById(sym+'-vol');
+  if(el)el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:75px;font-size:9px;color:var(--t3)">🔴 Market closed — weekend</div>';
+  set(sym+'-vol-info','Market closed');
+  ['vc','va','vr','vs'].forEach(function(k){set(sym+'-'+k,'--');});
+}
 function renderVol(sym,candles){
   var el=gel(sym+'-vol');if(!el)return;
-  var closed=sym==='xau'&&goldClosed;
+  var closed=(sym==='xau'&&goldClosed)||(sym==='us100'&&us100Closed);
   if(closed){el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:75px;font-size:9px;color:var(--t3)">🔴 Market closed</div>';set(sym+'-vol-info','Gold closed');return;}
   if(!candles||!candles.length){el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:75px;font-size:9px;color:var(--t3)">Loading 30M candles...</div>';return;}
   var vols=candles.map(function(c){return c.vol;}),maxV=Math.max.apply(null,vols)||1;
@@ -1120,7 +1132,7 @@ function checkSignal(sym,res,price,strategy){
   if(!res||!price)return;
   if(res.dir==='neutral')return;
   var isBTC=sym==='btc';
-  if(!isBTC&&goldClosed)return;
+  if((sym==='xau'&&goldClosed)||(sym==='us100'&&us100Closed))return;
   var now=Date.now();
   var lastCheckKey=strategy==='SNR'?snrLastCheck:null;
   var lastBuyKey=strategy==='SNR'?snrLastBuy:{xau:xauLastBuy,btc:btcLastBuy};
