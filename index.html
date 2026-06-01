@@ -172,6 +172,7 @@ input[type=range]{padding:0;accent-color:var(--gold);}
   <div class="kzbadge" id="kzbadge">OFF-HOURS</div>
 </div>
 <div class="btc247" id="btc247"><span style="color:var(--blue);font-weight:700">₿ BITCOIN · 24/7</span><span style="color:var(--green)">● ALWAYS OPEN</span><span id="btc247time"></span></div>
+<div class="btc247" id="us100bar" style="display:none;border-color:rgba(45,212,191,.3)"><span style="color:var(--teal,#2dd4bf);font-weight:700">📈 US100 · Mon–Fri</span><span id="us100-open-status" style="color:var(--green)">● OPEN</span><span style="color:var(--t3)">Opens Sun 11PM IST · Closes Fri 11:30PM IST</span><span id="us100bar-time" style="margin-left:auto"></span></div>
 <div class="tabs">
   <button class="tab on" onclick="sw('xau',this)" id="tab-xau">◈ XAU/USD</button>
   <button class="tab" onclick="sw('btc',this)" id="tab-btc">₿ BITCOIN</button>
@@ -463,9 +464,10 @@ input[type=range]{padding:0;accent-color:var(--gold);}
       </div>
       <div class="card">
         <div class="stitle" style="color:var(--teal,#2dd4bf)">US100 MARKET INFO</div>
-        <div class="rw"><span class="rl">Market Hours</span><span class="rv" style="color:var(--t2)">Mon–Fri (same as Gold)</span></div>
-        <div class="rw"><span class="rl">IST Hours</span><span class="rv" style="color:var(--t2)">7PM–1:30AM IST</span></div>
-        <div class="rw"><span class="rl">Pre-market</span><span class="rv" style="color:var(--t3)">4AM–9:30AM EST</span></div>
+        <div class="rw"><span class="rl">Market Hours</span><span class="rv" style="color:var(--t2)">Mon–Fri (same as XAU)</span></div>
+        <div class="rw"><span class="rl">Opens (IST)</span><span class="rv" style="color:var(--green)">Sunday 11:00 PM IST</span></div>
+        <div class="rw"><span class="rl">Closes (IST)</span><span class="rv" style="color:var(--red)">Friday 11:30 PM IST</span></div>
+        <div class="rw"><span class="rl">Weekend</span><span class="rv" style="color:var(--t3)">Closed Fri 11:30PM – Sun 11PM IST</span></div>
         <div class="rw"><span class="rl">Data Source</span><span class="rv" style="color:var(--t3)">Yahoo Finance ^NDX</span></div>
         <div id="news-compact-us100"><div style="color:var(--t3);font-size:9px;padding:6px">Loading news risk...</div></div>
       </div>
@@ -673,9 +675,10 @@ function sw(name,el){
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
   var tc=gel('tc-'+name);if(tc)tc.classList.add('on');
   if(el)el.classList.add('on');
-  var sb=gel('sbar'),b247=gel('btc247');
-  if(sb)sb.style.display=name==='btc'?'none':'';
+  var sb=gel('sbar'),b247=gel('btc247'),u100bar=gel('us100bar');
+  if(sb)sb.style.display=(name==='btc'||name==='us100')?'none':'';
   if(b247)b247.style.display=name==='btc'?'flex':'none';
+  if(u100bar)u100bar.style.display=name==='us100'?'flex':'none';
   if(name==='jnl')renderJnl();
   if(name==='news')renderNews();
   if(name==='sigs')renderAllSigs();
@@ -725,6 +728,14 @@ function updateClock(){
   var kzl={LONDON_KZ:'⭐ LONDON KZ',NY_KZ:'⭐ NY KZ',SILVER_BULLET:'★ SILVER BULLET',ASIAN:'ASIAN',DEAD_ZONE:'DEAD ZONE',OFF_HOURS:'OFF-HOURS'};
   var b=gel('kzbadge');if(b){b.textContent=goldClosed?'XAU CLOSED':(kzl[getKZ(m)]||'---');b.className='kzbadge'+(getKZ(m)==='LONDON_KZ'||getKZ(m)==='NY_KZ'?' prime':'');}
   var bt=gel('btc247time');if(bt)bt.textContent=hh+':'+mm+':'+ss+' IST';
+  // US100 bar status update
+  var u100bar=gel('us100bar');
+  if(u100bar&&u100bar.style.display==='flex'){
+    var u100st=gel('us100-open-status');
+    var u100t=gel('us100bar-time');
+    if(u100st){u100st.textContent=us100Closed?'🔴 CLOSED':'● OPEN';u100st.style.color=us100Closed?'var(--red)':'var(--green)';}
+    if(u100t)u100t.textContent=hh+':'+mm+':'+ss+' IST';
+  }
   var today=getISTStr();if(newsLoaded&&newsLoaded!==today){newsLoaded='';fetchNews();}
 }
 
