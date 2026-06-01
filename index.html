@@ -976,29 +976,81 @@ function fetchBTC(){
     }).catch(function(){});
 }
 function fetchUS100(){
-  if(us100Closed){set('feed-lbl','XAU+US100 CLOSED');return;}
-  // US100 = Nasdaq 100 via Yahoo Finance proxy
-  fetch('https://api.allorigins.win/get?url='+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?interval=1m&range=1d'))
-    .then(function(r){return r.json();})
-    .then(function(d){
-      var raw=JSON.parse(d.contents||'{}');
-      var q=raw&&raw.chart&&raw.chart.result&&raw.chart.result[0];
-      if(!q)throw 0;
-      var meta=q.meta;
-      var p=parseFloat(meta.regularMarketPrice||meta.previousClose||0);
-      if(!p)throw 0;
-      US100.price=p;
-      if(!US100.dailyOpen)US100.dailyOpen=parseFloat(meta.chartPreviousClose||meta.previousClose||p);
-      if(p>US100.high||!US100.high)US100.high=p;
-      if(p<US100.low||!US100.low)US100.low=p;
+  if(us100Closed){return;}
+  // Try multiple sources in sequence
+  tryUS100Source(0);
+}
+
+var us100Sources=[
+  // Source 1: Yahoo Finance via allorigins proxy
+  function(cb){
+    fetch('https://api.allorigins.win/get?url='+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?interval=1m&range=1d'))
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var raw=JSON.parse(d.contents||'{}');
+        var meta=raw&&raw.chart&&raw.chart.result&&raw.chart.result[0]&&raw.chart.result[0].meta;
+        var p=meta&&parseFloat(meta.regularMarketPrice||0);
+        if(p&&p>100)cb(p,parseFloat((meta.chartPreviousClose||meta.previousClose||p)));
+        else throw 0;
+      }).catch(function(){cb(null);});
+  },
+  // Source 2: Yahoo via corsproxy.io
+  function(cb){
+    fetch('https://corsproxy.io/?'+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?interval=1m&range=1d'))
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var meta=d&&d.chart&&d.chart.result&&d.chart.result[0]&&d.chart.result[0].meta;
+        var p=meta&&parseFloat(meta.regularMarketPrice||0);
+        if(p&&p>100)cb(p,parseFloat((meta.chartPreviousClose||meta.previousClose||p)));
+        else throw 0;
+      }).catch(function(){cb(null);});
+  },
+  // Source 3: Yahoo query2 via allorigins
+  function(cb){
+    fetch('https://api.allorigins.win/get?url='+encodeURIComponent('https://query2.finance.yahoo.com/v7/finance/quote?symbols=%5ENDX'))
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var raw=JSON.parse(d.contents||'{}');
+        var q=raw&&raw.quoteResponse&&raw.quoteResponse.result&&raw.quoteResponse.result[0];
+        var p=q&&parseFloat(q.regularMarketPrice||0);
+        if(p&&p>100)cb(p,parseFloat(q.regularMarketPreviousClose||p));
+        else throw 0;
+      }).catch(function(){cb(null);});
+  },
+  // Source 4: Stooq.com - free, no auth, CORS enabled
+  function(cb){
+    fetch('https://stooq.com/q/l/?s=ndx&f=sd2t2ohlcv&e=json')
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var q=d&&d.symbols&&d.symbols[0];
+        var p=q&&parseFloat(q.close||0);
+        if(p&&p>100)cb(p,parseFloat(q.open||p));
+        else throw 0;
+      }).catch(function(){cb(null);});
+  }
+];
+
+function tryUS100Source(i){
+  if(i>=us100Sources.length){
+    // All sources failed — keep last known price
+    if(US100.price>0)renderPrice('us100');
+    set('us100-vol-info','Price source unavailable');
+    return;
+  }
+  us100Sources[i](function(price,open){
+    if(price&&price>100){
+      US100.price=price;
+      if(!US100.dailyOpen||open)US100.dailyOpen=open||price;
+      if(price>US100.high||!US100.high)US100.high=price;
+      if(price<US100.low||!US100.low)US100.low=price;
       renderPrice('us100');
       set('feed-lbl','LIVE');
-    }).catch(function(){
-      // Fallback: use Binance NQ futures (NQ1! not available on spot, use MNQ proxy)
-      // Second fallback: use a static price update from last known
-      if(US100.price>0)renderPrice('us100'); // keep last known price
-    });
+    } else {
+      tryUS100Source(i+1);
+    }
+  });
 }
+
 function fetchDailyOpens(){
   fetch('https://api.binance.com/api/v3/klines?symbol=XAUUSDT&interval=1d&limit=2').then(function(r){return r.json();}).then(function(d){if(Array.isArray(d)&&d.length)XAU.dailyOpen=parseFloat(d[d.length-1][1]);}).catch(function(){});
   fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=2').then(function(r){return r.json();}).then(function(d){if(Array.isArray(d)&&d.length)BTC.dailyOpen=parseFloat(d[d.length-1][1]);}).catch(function(){});
@@ -1063,31 +1115,37 @@ function fetchAllCandles(){
 }
 function fetchUS100Candles(){
   if(us100Closed){renderVolClosed('us100');return;}
-  function buildCandles(url,interval,limit,cb){
-    fetch('https://api.allorigins.win/get?url='+encodeURIComponent(url))
-      .then(function(r){return r.json();})
-      .then(function(d){
-        var raw=JSON.parse(d.contents||'{}');
-        var q=raw&&raw.chart&&raw.chart.result&&raw.chart.result[0];
-        if(!q)throw 0;
-        var ts=q.timestamps||q.timestamp||[];
-        var ohlcv=q.indicators&&q.indicators.quote&&q.indicators.quote[0];
-        if(!ohlcv||!ts.length)throw 0;
-        var candles=[];
-        for(var i=0;i<ts.length;i++){
-          if(ohlcv.close[i]==null)continue;
-          candles.push({t:ts[i]*1000,open:ohlcv.open[i]||ohlcv.close[i],high:ohlcv.high[i]||ohlcv.close[i],low:ohlcv.low[i]||ohlcv.close[i],close:ohlcv.close[i],vol:ohlcv.volume[i]||1000});
-        }
-        if(candles.length>limit)candles=candles.slice(-limit);
-        cb(candles);
-      }).catch(function(){});
+  // Try Yahoo candles via multiple proxies
+  function tryYahooCandles(interval,limit,proxies,cb){
+    var yUrl='https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?interval='+interval+'&range='+(interval==='30m'?'5d':interval==='1h'?'10d':'30d');
+    function t(i){
+      if(i>=proxies.length){cb([]);return;}
+      var url=proxies[i]+encodeURIComponent(yUrl);
+      fetch(url).then(function(r){return r.json();})
+        .then(function(d){
+          var raw=(d.contents?JSON.parse(d.contents):d);
+          var res=raw&&raw.chart&&raw.chart.result&&raw.chart.result[0];
+          if(!res)throw 0;
+          var ts=res.timestamps||res.timestamp||[];
+          var q=res.indicators&&res.indicators.quote&&res.indicators.quote[0];
+          if(!q||!ts.length)throw 0;
+          var candles=[];
+          for(var j=0;j<ts.length;j++){
+            if(q.close[j]==null)continue;
+            candles.push({t:ts[j]*1000,open:q.open[j]||q.close[j],high:q.high[j]||q.close[j],low:q.low[j]||q.close[j],close:q.close[j],vol:q.volume[j]||1000});
+          }
+          if(candles.length>limit)candles=candles.slice(-limit);
+          cb(candles);
+        }).catch(function(){t(i+1);});
+    }
+    t(0);
   }
-  buildCandles('https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?interval=30m&range=5d',30,80,function(d){us100C30M=d;renderVol('us100',d);});
-  buildCandles('https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?interval=1h&range=10d',60,100,function(d){us100C1H=d;});
-  buildCandles('https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?interval=4h&range=20d',240,60,function(d){us100C4H=d;});
+  var proxies=['https://api.allorigins.win/get?url=','https://corsproxy.io/?'];
+  tryYahooCandles('30m',80,proxies,function(d){if(d.length){us100C30M=d;renderVol('us100',d);}});
+  tryYahooCandles('1h',100,proxies,function(d){if(d.length)us100C1H=d;});
+  tryYahooCandles('1h',100,proxies,function(d){if(d.length)us100C4H=d;}); // use 1H for 4H approx
 }
 
-// ═══ VOLUME RENDER ═══
 function renderVolClosed(sym){
   var el=document.getElementById(sym+'-vol');
   if(el)el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:75px;font-size:9px;color:var(--t3)">🔴 Market closed — weekend</div>';
